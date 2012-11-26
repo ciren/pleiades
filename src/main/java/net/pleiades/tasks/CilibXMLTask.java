@@ -37,7 +37,8 @@ import net.pleiades.simulations.Simulation;
 public class CilibXMLTask extends BasicDBObject implements Task, Serializable {
     private String cilibInput;
     private String id;
-    private String results, error;
+    private String results;
+    private StringBuilder output, stdOut;
     private String progress;
     private Simulation parent;
 
@@ -68,7 +69,7 @@ public class CilibXMLTask extends BasicDBObject implements Task, Serializable {
     @Override
     public boolean execute(Properties p) {
         results = new String();
-        error = new String();
+        output = new StringBuilder();
 
         String line;
         InputStream inputStream;
@@ -90,6 +91,8 @@ public class CilibXMLTask extends BasicDBObject implements Task, Serializable {
 
             while ((line = reader.readLine()) != null) {
                 progress = line;
+                stdOut.append(line);
+                stdOut.append("\n");
             }
 
             int exitValue = shell.waitFor();
@@ -101,9 +104,14 @@ public class CilibXMLTask extends BasicDBObject implements Task, Serializable {
                 r.delete();
             } else {
                 InputStream eIn = shell.getErrorStream();
-                error = convertStreamToStr(eIn);
                 FileWriter writer = new FileWriter(new File(id + ".log"));
-                writer.append(error);
+                
+                output.append("error:\n");
+                output.append(convertStreamToStr(eIn));
+                output.append("\n\nstdOut:\n");
+                output.append(stdOut);
+                
+                writer.append(output);
                 writer.close();
             }
         } catch (IOException e) {
@@ -114,6 +122,7 @@ public class CilibXMLTask extends BasicDBObject implements Task, Serializable {
         }
         
         if (results.isEmpty()) {
+            System.out.println("Returning error.");
             return false;
         }
                
@@ -147,8 +156,8 @@ public class CilibXMLTask extends BasicDBObject implements Task, Serializable {
     }
 
     @Override
-    public String getError() {
-        return error;
+    public String getOutput() {
+        return output.toString();
     }
 
     @Override

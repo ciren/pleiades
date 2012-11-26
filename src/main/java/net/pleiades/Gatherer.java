@@ -39,6 +39,7 @@ public class Gatherer {
     public void start(boolean cont) {
         Utils.authenticate(properties, "admin");
         new ResultsListener(properties).execute();
+        new ErrorListener(properties).exexcute();
         
         if (cont) {
             continueSimulations();

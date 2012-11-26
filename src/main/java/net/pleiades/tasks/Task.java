@@ -18,7 +18,7 @@ import net.pleiades.simulations.Simulation;
 public interface Task {
     boolean execute(Properties p);
     String getResults();
-    String getError();
+    String getOutput();
     String getProgress();
     String getId();
     String getInput();

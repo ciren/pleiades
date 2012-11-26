@@ -32,7 +32,7 @@ public class PersistentCilibSimulation extends BasicDBObject {
         put("id", s.getID());
         put("jobName", s.getJobName());
         put("unfinishedTasks", s.unfinishedCount());
-        put("results", s.getResults());
+        //put("results", s.getResults());
     }
     
     public String cilibInput() {

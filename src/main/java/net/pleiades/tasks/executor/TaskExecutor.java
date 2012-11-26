@@ -85,7 +85,8 @@ public class TaskExecutor implements Executor, Runnable, MessageListener<Map<Str
         if (success) {
             resultsTopic.publish(t);
         } else {
-            if (!t.getError().isEmpty()) {
+            if (!t.getOutput().isEmpty()) {
+                System.out.println("Publishing Error.");
                 errorTopic.publish(t);
             }
         }

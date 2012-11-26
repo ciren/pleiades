@@ -20,6 +20,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.locks.Lock;
+import net.pleiades.cluster.HazelcastCommunicator;
 import net.pleiades.simulations.Simulation;
 import net.pleiades.tasks.Task;
 
@@ -36,6 +37,11 @@ public class ErrorListener implements MessageListener<Task> {
 
     private void addListeners() {
         errorTopic.addMessageListener(this);
+    }
+    
+    public void exexcute() {
+        HazelcastCommunicator cluster = new HazelcastCommunicator();
+        cluster.connect();
     }
 
     @Override
@@ -88,7 +94,7 @@ public class ErrorListener implements MessageListener<Task> {
             txn.commit();
             
             //email user
-            Utils.emailUser(t.getParent(), new File(properties.getProperty("email_error_template")), properties, t.getError());
+            Utils.emailUser(t.getParent(), new File(properties.getProperty("email_error_template")), properties, t.getOutput());
             
         } catch (Throwable e) {
             txn.rollback();
