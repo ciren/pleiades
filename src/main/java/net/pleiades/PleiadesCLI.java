@@ -40,17 +40,18 @@ public class PleiadesCLI {
 
     private static void user(Properties properties, CommandLine cli, String user) {
         HazelcastCommunicator cluster = new HazelcastCommunicator();
-        UserDBCommunicator database = Utils.authenticate(properties, user);
+        //UserDBCommunicator database = Utils.authenticate(properties, user);
+        UserDBCommunicator database = Utils.connectToDatabase(properties);
 
         cluster.connect();
         int clusterSize = Hazelcast.getCluster().getMembers().size();
 
         if (clusterSize < MIN_MEMBERS) {
-            System.out.println("Error: Too few cluster members active.\nConnection terminated. If problem persists, contact cluster administrator.");
-            System.exit(1);
+            System.out.println("Error: Too few cluster members active.>Connection terminated. If problem persists, contact cluster administrator.");
+            System.exit(0);
         }
 
-        System.out.println("\nNow connected to Pleiades Cluster (" + clusterSize +" members).\nYou are logged in as " + user + ".");
+        System.out.println("Now connected to Pleiades Cluster (" + clusterSize +" members).>You are logged in as " + user + ".>");
 
         if (cli.hasOption("input")) {
             String input = cli.getOptionValue("input");

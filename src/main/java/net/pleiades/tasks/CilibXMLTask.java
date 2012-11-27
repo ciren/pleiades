@@ -38,7 +38,7 @@ public class CilibXMLTask extends BasicDBObject implements Task, Serializable {
     private String cilibInput;
     private String id;
     private String results;
-    private StringBuilder output, stdOut;
+    private StringBuilder output;
     private String progress;
     private Simulation parent;
 
@@ -91,8 +91,6 @@ public class CilibXMLTask extends BasicDBObject implements Task, Serializable {
 
             while ((line = reader.readLine()) != null) {
                 progress = line;
-                stdOut.append(line);
-                stdOut.append("\n");
             }
 
             int exitValue = shell.waitFor();
@@ -108,8 +106,6 @@ public class CilibXMLTask extends BasicDBObject implements Task, Serializable {
                 
                 output.append("error:\n");
                 output.append(convertStreamToStr(eIn));
-                output.append("\n\nstdOut:\n");
-                output.append(stdOut);
                 
                 writer.append(output);
                 writer.close();

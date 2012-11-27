@@ -25,13 +25,11 @@ public class CompletedMapPersistence implements MapStore<String, Simulation> {
     private static Properties properties;
 
     public CompletedMapPersistence() throws Exception {
-        System.out.print("Connecting to persistent store...");
         store = new MongoCommunicator(properties);
         if (!store.connect()) {
             System.out.println("ERROR: Unable to connect to persistent store. Contact administrator.");
             System.exit(1);
         }
-        System.out.println("done.");
     }
 
     @Override

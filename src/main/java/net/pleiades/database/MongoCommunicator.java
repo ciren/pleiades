@@ -141,7 +141,6 @@ public class MongoCommunicator implements PersistentStoreCommunicator {
 
     @Override
     public Set<String> loadAllKeys() {
-        System.out.println("loading all keys");
         Set<String> keys = new ConcurrentHashSet<String>();
         BasicDBObject query = new BasicDBObject();
         

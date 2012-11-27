@@ -81,7 +81,6 @@ public class Utils {
             Process shell = new ProcessBuilder("python", p.getProperty("email_script"), email, message.toString()).start();
             System.out.println(shell.waitFor());
         } catch (Exception e) {
-            System.out.print("WTF?? D:");
             e.printStackTrace();
         }
     }
@@ -91,7 +90,6 @@ public class Utils {
             Process shell = new ProcessBuilder("python", p.getProperty("email_script"), p.getProperty("admin_mail"), message).start();
             System.out.println(shell.waitFor());
         } catch (Exception e){
-            System.out.print("WTF?? D:");
             e.printStackTrace();
         }
     }
