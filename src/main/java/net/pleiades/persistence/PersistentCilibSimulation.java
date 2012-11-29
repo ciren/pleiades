@@ -22,7 +22,7 @@ public class PersistentCilibSimulation extends BasicDBObject {
     }
     
     public PersistentCilibSimulation(Simulation s) {
-        put("cilibInput", s.getCilibInput());
+        //put("cilibInput", s.getCilibInput());
         put("fileKey", s.getFileKey());
         put("outputFileName", s.getOutputFileName());
         put("outputPath", s.getOutputPath());
@@ -32,7 +32,7 @@ public class PersistentCilibSimulation extends BasicDBObject {
         put("id", s.getID());
         put("jobName", s.getJobName());
         put("unfinishedTasks", s.unfinishedCount());
-        //put("results", s.getResults());
+        put("results", s.getResults());
     }
     
     public String cilibInput() {
