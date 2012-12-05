@@ -65,15 +65,16 @@ public class Utils {
         System.out.print("Sending email to " + email);
         try {
             BufferedReader reader = new BufferedReader(new FileReader(messageTemplate));
-            System.out.print("* ");
+            System.out.print("*\n" + extra + "\n");
             while (reader.ready()) {
-                message.append(reader.readLine()
-                        .replaceAll("\\$user", owner)
-                        .replaceAll("\\$link", link)
-                        .replaceAll("\\$job", simulation.getJobName())
-                        .replaceAll("\\$sim_num", String.valueOf(simulation.getSimulationNumber()))
-                        .replaceAll("\\$extra", extra));
+                String m = reader.readLine();
+                m = m.replace("{user}", owner);
+                m = m.replace("{link}", link);
+                m = m.replace("{job}", simulation.getJobName());
+                m = m.replace("{sim_num}", String.valueOf(simulation.getSimulationNumber()));
+                m = m.replace("{extra}", extra);
                         
+                message.append(m);
                 message.append("\n");
             }
             System.out.print(p.getProperty("email_script"));

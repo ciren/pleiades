@@ -19,7 +19,6 @@ import com.hazelcast.core.MessageListener;
 import com.hazelcast.core.Transaction;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -35,18 +34,18 @@ import net.pleiades.tasks.Task;
  * @author bennie
  */
 public class Distributor implements EntryListener, MessageListener<String> {
-    ITopic requestTopic, tasksTopic;
-    List<String> requests;
-    SimulationSelector simulationSelector;
-    HeartBeat heartBeat;
-    Properties properties;
+    private ITopic requestTopic, tasksTopic;
+    //private List<String> requests;
+    private SimulationSelector simulationSelector;
+    private HeartBeat heartBeat;
+    private Properties properties;
 
     public Distributor(Properties p) {
         properties = p;
         simulationSelector = new EqualProbabilitySelector();
         requestTopic = Hazelcast.getTopic(Config.requestTopic);
         tasksTopic = Hazelcast.getTopic(Config.tasksTopic);
-        requests = new LinkedList<String>();
+        //requests = new LinkedList<String>();
         heartBeat = new HeartBeat();
     }
 
@@ -76,18 +75,14 @@ public class Distributor implements EntryListener, MessageListener<String> {
         
         Task t = null;
         String workerID = messageObject;
-        System.out.println(workerID);
-        System.out.print("1");
         
         if (jobsMap.size() == 0) {
             txn.rollback();
             jLock.unlock();
-            requests.add(messageObject);
+            //requests.add(messageObject);
             return;
         }
-        System.out.print("3");
         heartBeat.beat();
-        System.out.print("4");
         
         String key = simulationSelector.getKey(jobsMap);
         
@@ -95,32 +90,31 @@ public class Distributor implements EntryListener, MessageListener<String> {
             runningMap.put(workerID, new MockSimulation());
             
             List<Simulation> collection = jobsMap.remove(key);
-            System.out.print("5");
             if (collection == null) {
                 txn.rollback();
                 jLock.unlock();
-                requests.add(messageObject);
+                //requests.add(messageObject);
                 return;
             }
-            System.out.print("6");
+            
             for (Simulation s : collection) {
                 t = null;
                 if ((t = s.getUnfinishedTask()) != null) {
                     break;
                 }
             }
-            System.out.print("7");
+            
             jobsMap.put(key, collection);
-            System.out.print("8");
+
             if (t == null) {
                 txn.rollback();
                 jLock.unlock();
-                requests.add(messageObject);
+                //requests.add(messageObject);
                 return;
             }
             
             runningMap.put(workerID, t.getParent());
-            System.out.print("9");
+
             txn.commit();
         } catch (Throwable e) {
             e.printStackTrace();
@@ -130,7 +124,7 @@ public class Distributor implements EntryListener, MessageListener<String> {
             runningMap.forceUnlock(workerID);
             jLock.unlock();
         }
-        System.out.print("10");
+
         Map<String, Task> toPublish = new HashMap<String, Task>();
         toPublish.put(message.getMessageObject(), t);
 
@@ -179,6 +173,7 @@ public class Distributor implements EntryListener, MessageListener<String> {
                 }
             
                 heartBeatTopic.publish("beat");
+                tasksTopic.publish(new HashMap<String, Task>());
                 Utils.sleep(5000);
             }
         }
