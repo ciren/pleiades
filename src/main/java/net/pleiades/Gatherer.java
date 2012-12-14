@@ -10,7 +10,6 @@ package net.pleiades;
 
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.IMap;
-import com.hazelcast.core.ITopic;
 import com.hazelcast.core.Transaction;
 import java.io.BufferedReader;
 import java.io.InputStream;
@@ -31,20 +30,19 @@ import net.pleiades.tasks.CilibXMLTask;
  */
 public class Gatherer {
     Properties properties;
-    
+
     public Gatherer(Properties p) {
         this.properties = p;
     }
-    
+
     public void start(boolean cont) {
         Utils.authenticate(properties, "admin");
         new ResultsListener(properties).execute();
         new ErrorListener(properties).exexcute();
-        
+
         if (cont) {
             continueSimulations();
-            ITopic resultsTopic = Hazelcast.getTopic(Config.resultsTopic);
-            resultsTopic.publish(CilibXMLTask.of("", "", new MockSimulation()));
+            Config.RESULTS_TOPIC.publish(CilibXMLTask.of("", "", new MockSimulation()));
         }
     }
 
@@ -53,28 +51,28 @@ public class Gatherer {
         Lock cLock = Hazelcast.getLock(Config.completedMap);
         Lock jLock = Hazelcast.getLock(Config.simulationsMap);
         cLock.lock();
-        
+
         IMap<String, Simulation> completedMap = Hazelcast.getMap(Config.completedMap);
-        
+
         Transaction txn = Hazelcast.getTransaction();
         txn.begin();
         try {
             if (!completedMap.isEmpty()) {
                 System.out.println("Found " + completedMap.size() + " unfinished simulations!");
-                
+
                 jLock.lock();
                 IMap<String, List<Simulation>> simulationsMap = Hazelcast.getMap(Config.simulationsMap);
                 Map<String, List<Simulation>> jobs = new HashMap();
-                
+
                 for (Simulation current : completedMap.values()) {
                     Simulation s = current;
                     System.out.println("Unfinished simulation: " + s.getID());
-                    
+
                     int completed = 0;
                     String line;
                     InputStream inputStream;
                     BufferedReader reader;
-                    
+
                     String path = "/SAN/working/pleiades/results/" + s.getOwner() + "/" + s.getJobName() + "/temp/";
 
                     List<String> command = new ArrayList<String>();
@@ -93,23 +91,23 @@ public class Gatherer {
                                 files.add(path + line);
                             }
                         }
-                        
+
                         reader.close();
                         inputStream.close();
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
-                    
+
                     s.setResults(files);
-                    
+
                     completedMap.put(s.getID(), s);
-                    
+
                     //add the recovered sims to the jobs list?
                     // -calculate outstanding sample count
                     // -set unfinishedTasks
                     // -add to jobs queue
                 }
-                
+
                 txn.commit();
             } else {
                 txn.rollback();

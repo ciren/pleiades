@@ -10,7 +10,6 @@ package net.pleiades;
 
 import com.google.common.base.Preconditions;
 import com.hazelcast.core.Hazelcast;
-import com.hazelcast.core.ITopic;
 import java.util.Properties;
 import net.pleiades.cluster.HazelcastCommunicator;
 import net.pleiades.database.UserDBCommunicator;
@@ -59,7 +58,7 @@ public class PleiadesCLI {
             if (cli.hasOption("jar")) {
                 jar = cli.getOptionValue("jar");
             }
-            
+
             boolean cont = cli.hasOption("continue");
 
             User.uploadJob(properties, input, jar, user, database.getUserEmail(user));
@@ -67,10 +66,9 @@ public class PleiadesCLI {
             //User.showDetails(user);
         }
     }
-    
+
     private static void continueJob(CommandLine cli) {
-        ITopic continueTopic = Hazelcast.getTopic(Config.continueTopic);
-        continueTopic.publish(cli.getOptionValue("continue"));
+        Config.CONTINUE_TOPIC.publish(cli.getOptionValue("continue"));
     }
 
     private static void handleCommandline(Options options, CommandLine cli, String args[]) {
@@ -88,7 +86,7 @@ public class PleiadesCLI {
         } else {
             properties = Config.getConfiguration("pleiades.conf");
         }
-        
+
         CompletedMapPersistence.setProperties(properties); //bit of a hack :-/
 
         if (cli.hasOption("worker")) {

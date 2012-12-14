@@ -13,7 +13,6 @@ import com.hazelcast.core.EntryListener;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.IMap;
 import com.hazelcast.core.IQueue;
-import com.hazelcast.core.ITopic;
 import com.hazelcast.core.Message;
 import com.hazelcast.core.MessageListener;
 import com.hazelcast.core.Transaction;
@@ -31,20 +30,18 @@ import net.pleiades.tasks.Task;
 
 
 public class ResultsListener implements EntryListener, MessageListener<Task> {
-    private ITopic resultsTopic;
     private SampleGatherer gatherer;
     private Properties properties;
 
     public ResultsListener(Properties properties) {
         this.gatherer = new CilibSampleGatherer(properties);
-        this.resultsTopic = Hazelcast.getTopic(Config.resultsTopic);
         this.properties = properties;
 
         addListeners();
     }
 
     private void addListeners() {
-        resultsTopic.addMessageListener(this);
+        Config.RESULTS_TOPIC.addMessageListener(this);
     }
 
     public void execute() {
@@ -67,7 +64,7 @@ public class ResultsListener implements EntryListener, MessageListener<Task> {
 
     @Override
     public void entryUpdated(EntryEvent event) {
-        
+
     }
 
     @Override
@@ -82,29 +79,29 @@ public class ResultsListener implements EntryListener, MessageListener<Task> {
             checkAll();
             return;
         }
-        
+
         System.out.println("Task completed:" + message.getMessageObject().getId());
         Task t = message.getMessageObject();
 
         Lock cLock = Hazelcast.getLock(Config.completedMap);
         Lock jLock = Hazelcast.getLock(Config.simulationsMap);
         cLock.lock();
-        
+
         IMap<String, Simulation> completedMap = Hazelcast.getMap(Config.completedMap);
-        
+
         Transaction txn = Hazelcast.getTransaction();
         txn.begin();
-        
+
         try {
             Simulation cSimulation = completedMap.get(t.getParent().getID());
-            
+
             if (cSimulation == null) {
-                resultsTopic.publish(t); //republish this completed task
+                Config.RESULTS_TOPIC.publish(t); //republish this completed task
                 throw new Exception("No such simulation");
             }
-            
+
             cSimulation.completeTask(t, properties);
-            
+
             if (cSimulation.isComplete()) {
                 completedMap.remove(t.getParent().getID());
                 System.out.println("\nGathering: " + cSimulation.getID());
@@ -118,19 +115,19 @@ public class ResultsListener implements EntryListener, MessageListener<Task> {
                 System.out.print("3");
                 if (cSimulation.jobComplete()) {
                     Utils.emailUser(cSimulation, new File(properties.getProperty("email_complete_template")), properties, "");
-                    
+
                     IQueue<String> errors = Hazelcast.getQueue(Config.errorQueue);
                     IMap<String, byte[]> fileQueue = Hazelcast.getMap(Config.fileMap);
-                    
+
                     Iterator<String> iter = errors.iterator();
-                    
+
                     while (iter.hasNext()) {
                         if (iter.next().startsWith(cSimulation.getJobID())) {
                             iter.remove();
                         }
                     }
                     System.out.println("Error Queue Size: " + errors.size());
-                    
+
                     fileQueue.remove(cSimulation.getFileKey());
                     fileQueue.forceUnlock(cSimulation.getFileKey());
                     System.out.println("File Queue Size: " + fileQueue.size());
@@ -159,10 +156,10 @@ public class ResultsListener implements EntryListener, MessageListener<Task> {
         Lock cLock = Hazelcast.getLock(Config.completedMap);
         //Lock jLock = Hazelcast.getLock(Config.simulationsMap);
         cLock.lock();
-        
+
         IMap<String, Simulation> completedMap = Hazelcast.getMap(Config.completedMap);
         Transaction txn = Hazelcast.getTransaction();
-        
+
         for (Simulation cSimulation : completedMap.values()) {
             txn.begin();
             try {

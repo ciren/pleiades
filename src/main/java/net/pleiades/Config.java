@@ -8,10 +8,15 @@
  */
 package net.pleiades;
 
+import com.hazelcast.core.Hazelcast;
+import com.hazelcast.core.ITopic;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Properties;
 import java.util.Scanner;
+import net.pleiades.tasks.Task;
 import net.pleiades.utility.PleiadesConfiguration;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.OptionBuilder;
@@ -19,21 +24,22 @@ import org.apache.commons.cli.Options;
 
 public class Config {
 
-    public static String simulationsMap = "simulationsMap";
-    public static String runningMap = "runningMap";
-    public static String completedMap = "completedMap";
-    public static String fileMap = "fileMap";
-    public static String errorQueue = "errorQueue";
+    public static final String simulationsMap = "simulationsMap";
+    public static final String runningMap = "runningMap";
+    public static final String completedMap = "completedMap";
+    public static final String fileMap = "fileMap";
+    public static final String errorQueue = "errorQueue";
+    public static final String distributor = "distributor";
 
-    public static String requestTopic = "requestTopic";
-    public static String tasksTopic = "tasksTopic";
-    public static String resultsTopic = "resultsTopic";
-    public static String errorTopic = "errorTopic";
-    public static String continueTopic = "continueTopic";
-    public static String heartBeatTopic = "heartBeatTopic";
-    public static String distributor = "distributor";
-
+    public static final Map<String, Task> RESEND_REQUEST = new HashMap<String, Task>();
     public static final int MaxJobsPerUser = Integer.MAX_VALUE;
+
+    public static final ITopic TASKS_TOPIC = Hazelcast.getTopic("tasksTopic");
+    public static final ITopic REQUESTS_TOPIC = Hazelcast.getTopic("requestTopic");
+    public static final ITopic RESULTS_TOPIC = Hazelcast.getTopic("resultsTopic");
+    public static final ITopic ERRORS_TOPIC = Hazelcast.getTopic("errorTopic");
+    public static final ITopic CONTINUE_TOPIC = Hazelcast.getTopic("continueTopic");
+    public static final ITopic HEARTBEAT_TOPIC = Hazelcast.getTopic("heartBeatTopic");
 
     public static Options createOptions() {
         Options o = new Options();
@@ -69,7 +75,7 @@ public class Config {
                 .withDescription("Custom Cilib jar file")
                 .withLongOpt("jar")
                 .create("j");
-        
+
         Option cont = OptionBuilder.withDescription("Attempts to continue a job that did not complete correctly")
                 .withLongOpt("continue")
                 .create();
@@ -126,5 +132,5 @@ public class Config {
 
         return p;
     }
-    
+
 }

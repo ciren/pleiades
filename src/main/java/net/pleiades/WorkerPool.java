@@ -9,7 +9,6 @@
 package net.pleiades;
 
 import com.hazelcast.core.Hazelcast;
-import com.hazelcast.core.ITopic;
 import com.hazelcast.core.Message;
 import com.hazelcast.core.MessageListener;
 import java.io.IOException;
@@ -17,13 +16,12 @@ import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import jline.ConsoleReader;
-import net.pleiades.simulations.selection.EqualProbabilitySelector;
 import net.pleiades.tasks.executor.TaskExecutor;
 
 public class WorkerPool {
 
     private Lock dLock;
-    
+
     private Properties properties;
     private TaskExecutor[] workers;
     private ConsoleReader con;
@@ -33,13 +31,13 @@ public class WorkerPool {
 
     public WorkerPool(Properties p, int count, boolean quiet) {
         this.properties = p;
-        
+
         try {
             this.workers = new TaskExecutor[count];
             this.con = new ConsoleReader();
 
             for (int i = 0; i < count; i++) {
-                workers[i] = new TaskExecutor(p, new EqualProbabilitySelector(), String.valueOf(i));
+                workers[i] = new TaskExecutor(p, String.valueOf(i));
             }
 
             this.quiet = quiet;
@@ -67,7 +65,7 @@ public class WorkerPool {
             state = State.WORKING;
 
             new Thread(new Reader()).start();
-            
+
             if (!quiet) {
                 while (true) {
                     Utils.sleep(200);
@@ -118,7 +116,7 @@ public class WorkerPool {
                                 //System.out.println(key);
                         }
                     }
-                    
+
                     Utils.sleep(10);
                 } catch (IOException ex) {
                     ex.printStackTrace();
@@ -130,18 +128,16 @@ public class WorkerPool {
     private class TaskDistributor implements Runnable, MessageListener<String> {
         private Distributor distributor = null;
         private boolean isAlive;
-        private ITopic heartBeatTopic;
         private Lock lock;
-        
+
         public TaskDistributor(Lock lock) {
             this.lock = lock;
             this.isAlive = false;
-            heartBeatTopic = Hazelcast.getTopic(Config.heartBeatTopic);
             addListeners();
         }
 
         private void addListeners() {
-            heartBeatTopic.addMessageListener(this);
+            Config.HEARTBEAT_TOPIC.addMessageListener(this);
         }
 
         @Override
@@ -149,18 +145,18 @@ public class WorkerPool {
             while(distributor == null) {
                 if (!isAlive) {
                     lock = Hazelcast.getLock(Config.distributor);
-                    
+
                     boolean locked = false;
-                    
+
                     try {
                         locked = lock.tryLock(5, TimeUnit.SECONDS);
                     } catch (InterruptedException e) {
-                        Utils.emailAdmin(Hazelcast.getCluster().getLocalMember().getInetSocketAddress() + 
+                        Utils.emailAdmin(Hazelcast.getCluster().getLocalMember().getInetSocketAddress() +
                                 " Crashed while waiting for distributor lock! Workers have been terminated.",
                                 properties);
                         System.exit(1);
                     }
-                    
+
                     if (locked) {
                         distributor = new Distributor(properties);
                         distributor.activate();

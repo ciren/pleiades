@@ -10,25 +10,21 @@ package net.pleiades;
 
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.IMap;
-import com.hazelcast.core.ITopic;
 import com.hazelcast.core.Transaction;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.text.DecimalFormat;
 import java.util.*;
 import java.util.concurrent.locks.Lock;
 import jcifs.smb.SmbFileInputStream;
 import net.pleiades.simulations.Simulation;
 import net.pleiades.simulations.creator.SimulationsCreator;
 import net.pleiades.simulations.creator.XMLSimulationsCreator;
-import net.pleiades.tasks.Task;
 
 public class User {
     public static void uploadJob(Properties properties, String input, String jar, String user, String userEmail) {
         File run = null;
-        FileInputStream runInputStream = null;
         byte[] runBytes = null;
         //System.out.print("1");
         try {
@@ -51,7 +47,7 @@ public class User {
                 fout.close();
             }
             //System.out.print("2");
-            runInputStream = new FileInputStream(run);
+            FileInputStream runInputStream = new FileInputStream(run);
             runBytes = new byte[runInputStream.available()];
             runInputStream.read(runBytes);
             //System.out.print("3");
@@ -85,7 +81,6 @@ public class User {
         System.out.println("Job name set to: " + jobName + ">");
         SimulationsCreator creator = new XMLSimulationsCreator(user, userEmail, user, jobName);
         List<Simulation> simulations = creator.createSimulations(inputFile, fileKey);//runBytes);
-        ITopic tasksTopic = Hazelcast.getTopic(Config.tasksTopic);
 
         System.out.print("Your job contains " + simulations.size() + " simulations.>");
 
@@ -106,7 +101,7 @@ public class User {
                 jobsList = new LinkedList<Simulation>();
             }
             jobsList = new LinkedList<Simulation>(jobsList);
-            
+
             int len = 0;
             double sim = 0;
             //DecimalFormat df = new DecimalFormat("#.##");
@@ -122,22 +117,22 @@ public class User {
 //                System.out.print(progress);
 //                len = progress.length();
 //                sim++;
-                
+
                 //s.generateTasks();
                 tasks += s.getSamples();
                 jobsList.add(s);
                 completedMap.put(s.getID(), s.emptyClone());
                 completedMap.forceUnlock(s.getID());
             }
-            
+
             simulationsMap.put(user, jobsList);
-            
+
 //            String finalizing = " finalizing... (this may take some time)";
 //            len += finalizing.length();
 //            System.out.print(finalizing);
-            
+
             txn.commit();
-            
+
 //            for (int i = 0; i < len; i++) {
 //                System.out.print("\b");
 //            }
@@ -145,7 +140,7 @@ public class User {
 //            for (int i = 0; i < finalizing.length(); i++) {
 //                System.out.print(" ");
 //            }
-            
+
         } catch (Throwable e) {
             e.printStackTrace();
             txn.rollback();
@@ -157,8 +152,6 @@ public class User {
             jLock.unlock();
         }
 
-        tasksTopic.publish(new HashMap<String, Task>());
-        
         System.out.println(tasks + " tasks uploaded.>");
         System.out.println(">Your job was created successfully.>You will be notified via email (" + userEmail + ") when your results are available.>");
 
