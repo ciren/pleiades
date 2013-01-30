@@ -38,15 +38,10 @@ public class CilibSampleGatherer implements SampleGatherer {
 
     @Override
     public synchronized Simulation gatherResults(IMap<String, List<Simulation>> simulationsMap, IMap<String, Simulation> completedMap, Simulation s) throws Throwable {
-        System.out.print("*");
-
-        System.out.print("1");
-        
         if (simulationsMap != null) {
             completedMap.remove(s.getID());
             
             List<Simulation> sims = simulationsMap.remove(s.getOwner());
-            System.out.print("2");
             Iterator<Simulation> iter = sims.iterator();
 
             while (iter.hasNext()) {
@@ -55,13 +50,10 @@ public class CilibSampleGatherer implements SampleGatherer {
                     break;
                 }
             }
-            System.out.print("3");
             if (!sims.isEmpty()) {
                 simulationsMap.put(s.getOwner(), sims);
             }
         }
-            
-        System.out.print("4");
 
         List<String> results;
         
@@ -138,7 +130,6 @@ public class CilibSampleGatherer implements SampleGatherer {
 
         System.out.println("\nGatherer: Results saved to " + properties.getProperty("gather_results_folder") + s.getOwner() + "/" + jobName + "/" + s.getOutputPath());
 
-        System.out.print("*");
         return s;
     }
 

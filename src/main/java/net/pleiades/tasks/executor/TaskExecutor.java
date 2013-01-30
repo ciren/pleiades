@@ -79,7 +79,8 @@ public class TaskExecutor implements Executor, Runnable, MessageListener<Map<Str
     @Override
     public synchronized void onMessage(Message<Map<String, Task>> message) {
         if (!message.getMessageObject().isEmpty()) {
-            if (message.getMessageObject().keySet().contains(id)) {
+            System.out.println(id + " - " + message.getMessageObject().keySet().toArray()[0] + " - " + state);
+            if (message.getMessageObject().keySet().contains(id) && (isState(IDLE) || isState(REQUEST_SENT))) {
                 currentTask = message.getMessageObject().get(id);
                 System.out.println("|| " + id + " got " + currentTask.getId());
                 state(JOB_RECEIVED);
@@ -100,7 +101,7 @@ public class TaskExecutor implements Executor, Runnable, MessageListener<Map<Str
 
             if (currentTask != null) {
                 executeTask();
-            } else if (running && !isState(REQUEST_SENT)) {
+            } else if (running) {
                 requestNewTask();
             }
         }

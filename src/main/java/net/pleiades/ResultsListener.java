@@ -74,22 +74,38 @@ public class ResultsListener implements EntryListener, MessageListener<Task> {
 
     @Override
     public synchronized void onMessage(Message<Task> message) {
-        if (message.getMessageObject().getId().equals("")) {
-            System.out.println("Checking all results");
+        if (message.getMessageObject().getId().equals("")) { //this attempts to gather jobs from the completed map after the gatherer crashed unexpectedly
+            System.out.println("Checking all results");      //see line 45 in net.pleiades.Gatherer.java
             checkAll();
             return;
         }
+        
+        Task t = message.getMessageObject();
+        
+        Lock rLock = Hazelcast.getLock(Config.runningMap);
+        rLock.lock();
+        
+        IMap<String, String> runningMap = Hazelcast.getMap(Config.runningMap);
+        
+        Transaction txn = Hazelcast.getTransaction();
+        txn.begin();
+        
+        try {
+            runningMap.remove(t.getId());
+            txn.commit();
+        } catch (Throwable e) {
+            txn.rollback();
+        } finally {
+            rLock.unlock();
+        }
 
         System.out.println("Task completed:" + message.getMessageObject().getId());
-        Task t = message.getMessageObject();
 
         Lock cLock = Hazelcast.getLock(Config.completedMap);
         Lock jLock = Hazelcast.getLock(Config.simulationsMap);
         cLock.lock();
-
         IMap<String, Simulation> completedMap = Hazelcast.getMap(Config.completedMap);
 
-        Transaction txn = Hazelcast.getTransaction();
         txn.begin();
 
         try {
@@ -99,20 +115,19 @@ public class ResultsListener implements EntryListener, MessageListener<Task> {
                 Config.RESULTS_TOPIC.publish(t); //republish this completed task
                 throw new Exception("No such simulation");
             }
-
             cSimulation.completeTask(t, properties);
-
+            
             if (cSimulation.isComplete()) {
                 completedMap.remove(t.getParent().getID());
                 System.out.println("\nGathering: " + cSimulation.getID());
                 System.out.println(cSimulation.getResults().size() + " tasks completed.");
-                System.out.print("1");
+
                 jLock.lock();
                 IMap<String, List<Simulation>> simulationsMap = Hazelcast.getMap(Config.simulationsMap);
-                System.out.print("2");
+
                 gatherer.gatherResults(simulationsMap, completedMap, cSimulation);
                 simulationsMap.forceUnlock(cSimulation.getOwner());
-                System.out.print("3");
+
                 if (cSimulation.jobComplete()) {
                     Utils.emailUser(cSimulation, new File(properties.getProperty("email_complete_template")), properties, "");
 
@@ -133,15 +148,11 @@ public class ResultsListener implements EntryListener, MessageListener<Task> {
                     System.out.println("File Queue Size: " + fileQueue.size());
                 }
             } else {
-                System.out.println("here");
                 completedMap.put(t.getParent().getID(), cSimulation);
             }
+            
             completedMap.forceUnlock(t.getParent().getID());
-            System.out.print("4");
             txn.commit();
-            System.out.print("5");
-        } catch (RuntimeInterruptedException e) {
-            Thread.currentThread().interrupt();
         } catch (Throwable e) {
             System.out.println("ERROR:");
             e.printStackTrace();
@@ -172,7 +183,6 @@ public class ResultsListener implements EntryListener, MessageListener<Task> {
                     gatherer.gatherResults(null, completedMap, cSimulation);
 //                    simulationsMap.forceUnlock(cSimulation.getOwner());
                 } else {
-                    System.out.println("here");
                     completedMap.put(cSimulation.getID(), cSimulation);
                 }
                 completedMap.forceUnlock(cSimulation.getID());

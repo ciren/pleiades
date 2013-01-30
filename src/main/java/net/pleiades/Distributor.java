@@ -19,7 +19,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.locks.Lock;
-import net.pleiades.simulations.MockSimulation;
 import net.pleiades.simulations.Simulation;
 import net.pleiades.simulations.selection.EqualProbabilitySelector;
 import net.pleiades.simulations.selection.SimulationSelector;
@@ -57,34 +56,42 @@ public class Distributor implements MessageListener<String>, Runnable {
 
         Lock jLock = Hazelcast.getLock(Config.simulationsMap);
         Lock rLock = Hazelcast.getLock(Config.runningMap);
-        jLock.lock();
+        
         rLock.lock();
+        IMap<String, String> runningMap = Hazelcast.getMap(Config.runningMap);
 
+        if (runningMap.values().contains(workerID)) {
+            rLock.unlock();
+            return;
+        }
+
+        jLock.lock();
         IMap<String, List<Simulation>> jobsMap = Hazelcast.getMap(Config.simulationsMap);
-        IMap<String, Simulation> runningMap = Hazelcast.getMap(Config.runningMap);
 
         Transaction txn = Hazelcast.getTransaction();
         txn.begin();
 
         if (jobsMap.isEmpty()) {
             txn.rollback();
-            rLock.unlock();
             jLock.unlock();
+            rLock.unlock();
             return;
         }
+        
         beat();
 
         String key = simulationSelector.getKey(jobsMap);
 
+        Task task = null;
+
         try {
-            runningMap.put(workerID, new MockSimulation());
+            //runningMap.put(workerID, new MockSimulation());
 
             List<Simulation> collection = jobsMap.remove(key);
             if (collection == null) {
                 throw new Exception("Simulation " + key + "not found.");
             }
 
-            Task task = null;
             for (Simulation s : collection) {
                 task = s.getUnfinishedTask();
                 if (task != null) {
@@ -98,10 +105,25 @@ public class Distributor implements MessageListener<String>, Runnable {
                 throw new Exception("Unfinished task not found.");
             }
 
-            runningMap.put(workerID, task.getParent());
+            runningMap.put(task.getId(), workerID);
 
             txn.commit();
 
+            /* BEGIN TESTING */
+//            if(!runningMap.isEmpty()) {
+//                StringBuilder running = new StringBuilder();
+//                for (Task t : runningMap.keySet()) {
+//                    running.append(t.getId());
+//                    running.append(" -> ");
+//                    running.append(runningMap.get(t));
+//                    running.append("\n");
+//                }
+//            
+//            
+//                Utils.emailAdmin("Running Map:\n\n" + running.toString(), properties);
+//            }
+            /* END TESTING */
+            
             Map<String, Task> toPublish = new HashMap<String, Task>();
             toPublish.put(workerID, task);
             Config.TASKS_TOPIC.publish(toPublish);
@@ -110,9 +132,9 @@ public class Distributor implements MessageListener<String>, Runnable {
             txn.rollback();
         } finally {
             jobsMap.forceUnlock(key);
-            runningMap.forceUnlock(workerID);
-            rLock.unlock();
+            //runningMap.forceUnlock(task);
             jLock.unlock();
+            rLock.unlock();
         }
     }
 
@@ -126,9 +148,9 @@ public class Distributor implements MessageListener<String>, Runnable {
 
             beat();
 
-            if (checkCounter % RESEND_REQUEST_INTERVAL == 0) {
-                Config.TASKS_TOPIC.publish(Config.RESEND_REQUEST);
-            }
+//            if (checkCounter % RESEND_REQUEST_INTERVAL == 0) {
+//                Config.TASKS_TOPIC.publish(Config.RESEND_REQUEST);
+//            }
 
             checkCounter = (checkCounter + 1) % CHECK_INTERVAL;
 
@@ -148,28 +170,27 @@ public class Distributor implements MessageListener<String>, Runnable {
         txn.begin();
 
         try {
-            IMap<String, Simulation> runningMap = Hazelcast.getMap(Config.runningMap);
+            IMap<Task, String> runningMap = Hazelcast.getMap(Config.runningMap);
 
-            for (String key : runningMap.keySet()) {
-                Simulation sim = runningMap.get(key);
+            for (Task task : runningMap.keySet()) {
+                String workerID = runningMap.get(task);
                 boolean memberIsAlive = false;
 
-                if (!sim.getID().equals("Mock")) {
-                    for (Member m : Hazelcast.getCluster().getMembers()) {
-                        if (Utils.getSocketStringFromWorkerID(key).equals(m.getInetSocketAddress().toString())) {
-                            memberIsAlive = true;
-                            break;
-                        }
-                    }
-
-                    if (!memberIsAlive) {
-                        sim.addUnfinishedTask();
-                        runningMap.remove(key);
-                        Utils.emailAdmin(Utils.getSocketStringFromWorkerID(key) + " Crashed!! One task has been recovered.", properties);
+                for (Member m : Hazelcast.getCluster().getMembers()) {
+                    if (Utils.getSocketStringFromWorkerID(workerID).equals(m.getInetSocketAddress().toString())) {
+                        memberIsAlive = true;
+                        break;
                     }
                 }
 
-                runningMap.forceUnlock(key);
+                if (!memberIsAlive) {
+                    //sim.addUnfinishedTask(); //this is incorrect. The task should be added in the SimulationsMap
+                    regenerateTask(task.getParent());
+                    runningMap.remove(task);
+                    Utils.emailAdmin(Utils.getSocketStringFromWorkerID(workerID) + " Crashed!! One task has been recovered.", properties);
+                }
+
+                runningMap.forceUnlock(task);
             }
 
             txn.commit();
@@ -178,5 +199,10 @@ public class Distributor implements MessageListener<String>, Runnable {
         } finally {
             rLock.unlock();
         }
+    }
+    
+    private void regenerateTask(Simulation sim) {
+        //TODO: regenerate a task in the Simulations Map
+        Utils.emailAdmin("Regenerating task for simulation " + sim.getID(), properties);
     }
 }
