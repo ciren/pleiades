@@ -17,10 +17,10 @@ import net.pleiades.simulations.Simulation;
  * @author bennie
  */
 public class PersistentCilibSimulation extends BasicDBObject {
-    
+
     public PersistentCilibSimulation() {
     }
-    
+
     public PersistentCilibSimulation(Simulation s) {
         //put("cilibInput", s.getCilibInput());
         put("fileKey", s.getFileKey());
@@ -33,49 +33,54 @@ public class PersistentCilibSimulation extends BasicDBObject {
         put("jobName", s.getJobName());
         put("unfinishedTasks", s.unfinishedCount());
         put("results", s.getResults());
+        put("releaseType", s.getReleaseType());
     }
-    
+
     public String cilibInput() {
         return (String) get("cilibInput");
     }
-    
+
     public String fileKey() {
         return (String) get("fileKey");
     }
-    
+
     public String outputFileName() {
         return (String) get("outputFileName");
     }
-    
+
     public String outputPath() {
         return (String) get("outputPath");
     }
-    
+
     public String owner() {
         return (String) get("owner");
     }
-    
+
     public String ownerEmail() {
         return (String) get("ownerEmail");
     }
-    
+
     public String id() {
         return (String) get("id");
     }
-    
+
     public String jobName() {
         return (String) get("jobName");
     }
-    
+
     public int samples() {
         return (Integer) get("samples");
     }
-    
+
     public int unfinishedTasks() {
         return (Integer) get("unfinishedTasks");
     }
-    
+
     public List<String> results() {
         return (ArrayList<String>) get("results");
+    }
+
+    public String releaseType() {
+        return (String) get("releaseType");
     }
 }

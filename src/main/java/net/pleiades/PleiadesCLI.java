@@ -10,6 +10,7 @@ package net.pleiades;
 
 import com.google.common.base.Preconditions;
 import com.hazelcast.core.Hazelcast;
+import java.util.Arrays;
 import java.util.Properties;
 import net.pleiades.cluster.HazelcastCommunicator;
 import net.pleiades.database.UserDBCommunicator;
@@ -52,18 +53,27 @@ public class PleiadesCLI {
 
         System.out.println("Now connected to Pleiades Cluster (" + clusterSize +" members).>You are logged in as " + user + ".>");
 
-        if (cli.hasOption("input")) {
+        if (cli.hasOption("input") && cli.hasOption("release-type") && cli.hasOption("jar")) {
+
             String input = cli.getOptionValue("input");
-            String jar = null;
-            if (cli.hasOption("jar")) {
-                jar = cli.getOptionValue("jar");
+            String jar = cli.getOptionValue("jar");
+            String releaseType = cli.getOptionValue("release-type");
+            //boolean cont = cli.hasOption("continue"); //for the future
+
+            if (!Arrays.asList("master", "official", "custom").contains(releaseType.toLowerCase())) {
+                System.out.println("Error: Valid arguments for 'release-type' are 'official', 'master' and 'custom'.");
+                System.exit(1);
             }
 
-            boolean cont = cli.hasOption("continue");
+            if (jar == null) {
+                System.out.println("Error: Option 'jar' takes an argument.");
+                System.exit(1);
+            }
 
-            User.uploadJob(properties, input, jar, user, database.getUserEmail(user));
+            User.uploadJob(properties, input, jar, user, database.getUserEmail(user), releaseType);
         } else {
-            //User.showDetails(user);
+            System.out.println("Error: Options 'jar', 'input' and 'release-type' are required with option 'user'.");
+            System.exit(1);
         }
     }
 

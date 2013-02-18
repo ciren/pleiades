@@ -13,76 +13,56 @@ import com.hazelcast.core.IMap;
 import com.hazelcast.core.Transaction;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.locks.Lock;
-import jcifs.smb.SmbFileInputStream;
 import net.pleiades.simulations.Simulation;
 import net.pleiades.simulations.creator.SimulationsCreator;
 import net.pleiades.simulations.creator.XMLSimulationsCreator;
 
 public class User {
-    public static void uploadJob(Properties properties, String input, String jar, String user, String userEmail) {
+    public static void uploadJob(Properties properties, String input, String jar, String user, String userEmail, String releaseType) {
         File run = null;
         byte[] runBytes = null;
-        //System.out.print("1");
+
+        // In case of debugging emergency copy/paste the following line!!!
+        //System.out.println("1");
+
         try {
-            if (jar != null) {
-                System.out.println(">Info: Using custom jar file.>");
-                run = new File(jar);
-            } else {
-                System.out.println(">Info: Using default jar file.>");
-                SmbFileInputStream smbJar = Utils.getJarFile(properties.getProperty("ci_jar"));
+            System.out.println(">Using jar file: " + jar);
+            run = new File(jar);
 
-                run = new File("pleiades.run");
-                run.deleteOnExit();
-                FileOutputStream fout = new FileOutputStream(run);
-                byte[] b = new byte[8192];
-                int n;
-
-                while ((n = smbJar.read(b)) > 0) {
-                    fout.write(b, 0, n);
-                }
-                fout.close();
-            }
-            //System.out.print("2");
             FileInputStream runInputStream = new FileInputStream(run);
             runBytes = new byte[runInputStream.available()];
             runInputStream.read(runBytes);
-            //System.out.print("3");
         } catch (IOException e) {
             e.printStackTrace();
         }
-        //System.out.print("4");
+
         if (run == null) {
-            System.out.println("Error: jar file not specified! Check your Pleiades configuration or use --jar to specify a custom jar file.");
+            System.out.println(">Error: jar file not valid!");
             System.exit(1);
         }
-        //System.out.print("5");
-        //System.out.print(">Aquiring lock...");
+
         Lock jLock = Hazelcast.getLock(Config.simulationsMap);
         Lock fLock = Hazelcast.getLock(Config.fileMap);
         Lock cLock = Hazelcast.getLock(Config.completedMap);
-        //System.out.print("6");
+
         jLock.lock();
-        //System.out.print("7");
         fLock.lock();
-        //System.out.print("8");
         cLock.lock();
-        //System.out.print("9");
 
         File inputFile = new File(input);
         String absPath = inputFile.getAbsolutePath();
         String jobName = absPath.substring(absPath.replaceAll("\\\\", "/").lastIndexOf("/") + 1, absPath.lastIndexOf("."));
         String fileKey = user + "_" + jobName;
-        //System.out.print("10");
-        System.out.println(">Creating job from file (" + input + ")>");
-        System.out.println("Job name set to: " + jobName + ">");
-        SimulationsCreator creator = new XMLSimulationsCreator(user, userEmail, user, jobName);
+
+        System.out.println(">Creating job from file: " + input);
+        System.out.println(">Job name set to: " + jobName);
+        SimulationsCreator creator = new XMLSimulationsCreator(user, userEmail, user, jobName, releaseType);
         List<Simulation> simulations = creator.createSimulations(inputFile, fileKey);//runBytes);
 
-        System.out.print("Your job contains " + simulations.size() + " simulations.>");
+        System.out.println(">Your job contains " + simulations.size() + " simulations.");
 
         IMap<String, List<Simulation>> simulationsMap = Hazelcast.getMap(Config.simulationsMap);
         IMap<String, byte[]> fileQueue = Hazelcast.getMap(Config.fileMap);
@@ -94,7 +74,7 @@ public class User {
         int tasks = 0;
         try {
 
-            System.out.print(">Uploading tasks to cluster...");
+            System.out.println(">Uploading tasks to cluster...");
             fileQueue.put(fileKey, runBytes);
             List<Simulation> jobsList = simulationsMap.remove(user);
             if (jobsList == null) {
@@ -102,23 +82,7 @@ public class User {
             }
             jobsList = new LinkedList<Simulation>(jobsList);
 
-            int len = 0;
-            double sim = 0;
-            //DecimalFormat df = new DecimalFormat("#.##");
-            //StringBuilder progress;
             for (Simulation s : simulations) {
-//                progress = new StringBuilder();
-//                for (int i = 0; i < len; i++) {
-//                    System.out.print("\b");
-//                }
-//                double p = (sim / simulations.size()) * 100;
-//                progress.append(df.format(p));
-//                progress.append("%");
-//                System.out.print(progress);
-//                len = progress.length();
-//                sim++;
-
-                //s.generateTasks();
                 tasks += s.getSamples();
                 jobsList.add(s);
                 completedMap.put(s.getID(), s.emptyClone());
@@ -126,21 +90,9 @@ public class User {
             }
 
             simulationsMap.put(user, jobsList);
-
-//            String finalizing = " finalizing... (this may take some time)";
-//            len += finalizing.length();
-//            System.out.print(finalizing);
-
             txn.commit();
 
-//            for (int i = 0; i < len; i++) {
-//                System.out.print("\b");
-//            }
-            System.out.print("100%>");
-//            for (int i = 0; i < finalizing.length(); i++) {
-//                System.out.print(" ");
-//            }
-
+            System.out.println("> 100% >");
         } catch (Throwable e) {
             e.printStackTrace();
             txn.rollback();
@@ -152,8 +104,8 @@ public class User {
             jLock.unlock();
         }
 
-        System.out.println(tasks + " tasks uploaded.>");
-        System.out.println(">Your job was created successfully.>You will be notified via email (" + userEmail + ") when your results are available.>");
+        System.out.println(tasks + " tasks uploaded.");
+        System.out.println(">Your job was created successfully.\n>You will be notified via email (" + userEmail + ") when your results are available.>");
 
         Hazelcast.getLifecycleService().shutdown();
         System.exit(0);

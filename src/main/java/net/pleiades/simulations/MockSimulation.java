@@ -64,20 +64,10 @@ public class MockSimulation implements Simulation, Serializable {
         throw new UnsupportedOperationException("Not supported yet.");
     }
 
-//    @Override
-//    public boolean generateTasks() {
-//        throw new UnsupportedOperationException("Not supported yet.");
-//    }
-
     @Override
     public boolean completeTask(Task t, Properties p) {
         throw new UnsupportedOperationException("Not supported yet.");
     }
-
-//    @Override
-//    public boolean isTasksCreated() {
-//        throw new UnsupportedOperationException("Not supported yet.");
-//    }
 
     @Override
     public int getSimulationNumber() {
@@ -149,9 +139,9 @@ public class MockSimulation implements Simulation, Serializable {
         throw new UnsupportedOperationException("Not supported yet.");
     }
 
-//    @Override
-//    public Task getSimulationTask() {
-//        throw new UnsupportedOperationException("Not supported yet.");
-//    }
+    @Override
+    public String getReleaseType() {
+        throw new UnsupportedOperationException("Not supported yet.");
+    }
 
 }

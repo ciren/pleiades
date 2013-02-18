@@ -11,19 +11,13 @@ package net.pleiades;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
-import java.net.MalformedURLException;
-import java.net.UnknownHostException;
 import java.util.Properties;
-import jcifs.smb.NtlmPasswordAuthentication;
-import jcifs.smb.SmbException;
-import jcifs.smb.SmbFile;
-import jcifs.smb.SmbFileInputStream;
-import net.pleiades.database.UserDBCommunicator;
 import net.pleiades.database.MySQLCommunicator;
+import net.pleiades.database.UserDBCommunicator;
 import net.pleiades.simulations.Simulation;
 
 public class Utils {
-    
+
     public static UserDBCommunicator connectToDatabase(Properties p) {
         UserDBCommunicator db = new MySQLCommunicator(p);
 
@@ -33,28 +27,6 @@ public class Utils {
         }
 
         return db;
-    }
-
-    public static SmbFileInputStream getJarFile(String jarPath) {
-        SmbFileInputStream in = null;
-        SmbFile jar = null;
-
-        try {
-            NtlmPasswordAuthentication auth = new NtlmPasswordAuthentication(null, "CiClops", "ciclops5813x");
-            jar = new SmbFile(jarPath, auth);
-            in = new SmbFileInputStream(jar);
-        } catch (SmbException e) {
-            System.out.println("Error: Unable to locate jar file!\n" + e.getMessage());
-            System.exit(1);
-        } catch (UnknownHostException e) {
-            System.out.println("Error: Host not found when trying to get jar file!\n" + e.getMessage());
-            System.exit(1);
-        } catch (MalformedURLException e) {
-            System.out.println("Error: Malformed URL!\n" + e.getMessage());
-            System.exit(1);
-        }
-
-        return in;
     }
 
     public static void emailUser(Simulation simulation, File messageTemplate, Properties p, String extra) {
@@ -73,12 +45,12 @@ public class Utils {
                 m = m.replace("{job}", simulation.getJobName());
                 m = m.replace("{sim_num}", String.valueOf(simulation.getSimulationNumber()));
                 m = m.replace("{extra}", extra);
-                        
+
                 message.append(m);
                 message.append("\n");
             }
             System.out.print(p.getProperty("email_script"));
-            
+
             Process shell = new ProcessBuilder("python", p.getProperty("email_script"), email, message.toString()).start();
             System.out.println(shell.waitFor());
         } catch (Exception e) {
@@ -125,7 +97,7 @@ public class Utils {
             e.printStackTrace();
         }
     }
-    
+
     public static String getSocketStringFromWorkerID(String id) {
         return id.substring(0, id.lastIndexOf("-"));
     }

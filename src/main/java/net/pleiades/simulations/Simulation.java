@@ -25,9 +25,7 @@ public interface Simulation {
     boolean hasUnfinishedTasks();
     boolean isComplete();
     boolean jobComplete();
-    //boolean generateTasks();
     boolean completeTask(Task t, Properties p);
-    //boolean isTasksCreated();
     int getSimulationNumber();
     String getID();
     String getJobID();
@@ -43,5 +41,5 @@ public interface Simulation {
     void setResults(List<String> results);
     Simulation emptyClone();
     String getCilibInput();
-    //Task getSimulationTask();
+    String getReleaseType();
 }

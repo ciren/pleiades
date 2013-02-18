@@ -76,6 +76,12 @@ public class Config {
                 .withLongOpt("jar")
                 .create("j");
 
+        Option releaseType = OptionBuilder.withArgName("release type")
+                .hasArg()
+                .withDescription("Official Cilib jar release: options are 'official', 'custom' or 'master'.")
+                .withLongOpt("release-type")
+                .create("t");
+
         Option cont = OptionBuilder.withDescription("Attempts to continue a job that did not complete correctly")
                 .withLongOpt("continue")
                 .create();
@@ -102,6 +108,7 @@ public class Config {
         o.addOption(config);
         o.addOption(worker);
         o.addOption(jar);
+        o.addOption(releaseType);
         o.addOption(register);
         o.addOption(gatherer);
         o.addOption(monitor);

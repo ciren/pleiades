@@ -32,17 +32,17 @@ import net.pleiades.tasks.Task;
  */
 public class CilibSimulation extends BasicDBObject implements Simulation, Serializable {
     private static final long serialVersionUID = 778767591595073953L;
-    
+
     private String cilibInput, fileKey;
     private String outputFileName, outputPath;
     private int samples;
     private String owner, ownerEmail, id, jobName;
     private int unfinishedTasks;
-
+    private String releaseType;
     private List<String> results;
 
     public CilibSimulation(String cilibInput, String fileKey/*byte[] jar*/, String outputFileName, String outputPath, int samples,
-            String owner, String ownerEmail, String id, String name) {
+            String owner, String ownerEmail, String id, String name, String releaseType) {
         this.owner = owner;
         this.ownerEmail = ownerEmail;
         this.jobName = name;
@@ -52,7 +52,7 @@ public class CilibSimulation extends BasicDBObject implements Simulation, Serial
         this.outputPath = outputPath;
         this.samples = samples;
         this.unfinishedTasks = samples;
-
+        this.releaseType = releaseType;
         this.results = new LinkedList<String>();
 
         if (!createID(id)) {
@@ -73,6 +73,7 @@ public class CilibSimulation extends BasicDBObject implements Simulation, Serial
         this.fileKey = other.fileKey;
         this.unfinishedTasks = other.unfinishedTasks;
         this.cilibInput = other.cilibInput;
+        this.releaseType = other.releaseType;
     }
 
     public CilibSimulation(PersistentCilibSimulation p) {
@@ -85,6 +86,7 @@ public class CilibSimulation extends BasicDBObject implements Simulation, Serial
         this.outputPath = p.outputPath();
         this.results = p.results();
         this.fileKey = p.fileKey();
+        this.releaseType = p.releaseType();
 
         this.cilibInput = p.cilibInput();
     }
@@ -120,7 +122,7 @@ public class CilibSimulation extends BasicDBObject implements Simulation, Serial
 
         String myId;
         boolean validId;
-        
+
         for (int i = 0; i < Config.MaxJobsPerUser; i++) {
             myId = id.replaceAll("_", "_" + i + "_");
 
@@ -137,7 +139,7 @@ public class CilibSimulation extends BasicDBObject implements Simulation, Serial
                 return true;
             }
         }
-        
+
         return false;
     }
 
@@ -172,11 +174,11 @@ public class CilibSimulation extends BasicDBObject implements Simulation, Serial
         File temp = new File(path);
         temp.mkdirs();
         path = path + t.getId() + ".tmp";
-        
+
         while ((temp = new File(path)).exists()) {
             path = path.replaceAll(".tmp", "_.tmp");
         }
-        
+
         try {
             BufferedWriter writer = new BufferedWriter(new FileWriter(temp));
 
@@ -186,7 +188,7 @@ public class CilibSimulation extends BasicDBObject implements Simulation, Serial
         } catch (IOException e) {
             e.printStackTrace();
         }
-        
+
         return results.add(path);
     }
 
@@ -202,7 +204,7 @@ public class CilibSimulation extends BasicDBObject implements Simulation, Serial
         } else {
             unfinishedTasks--;
         }
-        
+
         return CilibXMLTask.of(cilibInput, id + "_" + String.valueOf(samples - unfinishedTasks), this);
     }
 
@@ -254,7 +256,7 @@ public class CilibSimulation extends BasicDBObject implements Simulation, Serial
     public int addUnfinishedTask() {
         return ++unfinishedTasks;
     }
-    
+
     @Override
     public int removeUnfinishedTask() {
         return --unfinishedTasks;
@@ -287,7 +289,7 @@ public class CilibSimulation extends BasicDBObject implements Simulation, Serial
     public String getId() {
         return id;
     }
-    
+
     @Override
     public String toString() {
         return "Job: " + jobName + " (" + outputFileName + ")";
@@ -296,5 +298,10 @@ public class CilibSimulation extends BasicDBObject implements Simulation, Serial
     @Override
     public void setResults(List<String> results) {
         this.results = results;
+    }
+
+    @Override
+    public String getReleaseType() {
+        return releaseType;
     }
 }

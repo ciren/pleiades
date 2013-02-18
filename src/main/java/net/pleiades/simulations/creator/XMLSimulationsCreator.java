@@ -35,13 +35,14 @@ import org.w3c.dom.NodeList;
  * @author bennie
  */
 public class XMLSimulationsCreator implements SimulationsCreator {
-    private String id, owner, ownerEmail, name;
+    private String id, owner, ownerEmail, name, releaseType;
 
-    public XMLSimulationsCreator(String owner, String ownerEmail, String id, String name) {
+    public XMLSimulationsCreator(String owner, String ownerEmail, String id, String name, String releaseType) {
         this.owner = owner;
         this.ownerEmail = ownerEmail;
         this.id = id;
         this.name = name;
+        this.releaseType = releaseType;
     }
 
 
@@ -66,7 +67,7 @@ public class XMLSimulationsCreator implements SimulationsCreator {
 
             Node alg, prb, msr, sim, output;
             String jobOutputFileName, jobOutputPath;
-            
+
             for (int s = 0; s < simulations.getLength(); s++) {
                 Node simulation = simulations.item(s);
 
@@ -101,7 +102,7 @@ public class XMLSimulationsCreator implements SimulationsCreator {
                         jobOutputPath = jobOutputPath.substring(0, jobOutputPath.length() - 1);
                     }
                     //System.out.println("\nOutputPath: " + jobOutputPath);
-                    
+
                     jobOutputFileName = jobOutputPath;
                     if (jobOutputFileName.contains("/")) {
                         jobOutputFileName = jobOutputFileName.substring(jobOutputFileName.lastIndexOf("/") + 1);
@@ -124,8 +125,8 @@ public class XMLSimulationsCreator implements SimulationsCreator {
                     DOMSource source = new DOMSource(newJob);
 
                     transformer.transform(source, new StreamResult(cilibInput));
-                    
-                    sims.add(new CilibSimulation(cilibInput.toString(), fileKey, jobOutputFileName, jobOutputPath, samples, owner, ownerEmail, id + "_" + s, name));
+
+                    sims.add(new CilibSimulation(cilibInput.toString(), fileKey, jobOutputFileName, jobOutputPath, samples, owner, ownerEmail, id + "_" + s, name, releaseType));
                 }
             }
         }
