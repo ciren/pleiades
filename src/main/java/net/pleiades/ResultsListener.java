@@ -95,6 +95,7 @@ public class ResultsListener implements EntryListener, MessageListener<Task> {
         } catch (Throwable e) {
             txn.rollback();
         } finally {
+            runningMap.forceUnlock(t.getId());
             rLock.unlock();
         }
 
