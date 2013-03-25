@@ -23,7 +23,9 @@ import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.cli.Options;
 
 public class Config {
-
+    private static Properties properties = null;
+    private static final String configFile = "pleiades.conf";
+            
     public static final String simulationsMap = "simulationsMap";
     public static final String runningMap = "runningMap";
     public static final String completedMap = "completedMap";
@@ -43,33 +45,30 @@ public class Config {
 
     public static Options createOptions() {
         Options o = new Options();
-
         Option help = new Option("h", "help", false, "Display Pleiades usage information");
-
         Option user = OptionBuilder.withArgName("username")
                 .hasArg()
                 .withDescription("Pleiades username")
                 .withLongOpt("user")
                 .create("u");
-
         Option file = OptionBuilder.withArgName("input file")
                 .hasArg()
                 .withDescription("Cilib input file")
                 .withLongOpt("input")
                 .create("i");
-
-        Option config = OptionBuilder.withArgName("config file")
-                .hasArg()
-                .withDescription("Pleiades configuration file (default: \"pleiades.conf\")")
-                .withLongOpt("config")
-                .create("c");
+        
+//        Option config = OptionBuilder.withArgName("config file")
+//                .hasArg()
+//                .withDescription("Pleiades configuration file (default: \"pleiades.conf\")")
+//                .withLongOpt("config")
+//                .create("c");
 
         Option worker = OptionBuilder.withArgName("worker count quietMode")
                 .withDescription("Start Pleiades member in worker mode (ignores all other options)")
                 .hasOptionalArg()
                 .withLongOpt("worker")
                 .create("w");
-
+        
         Option jar = OptionBuilder.withArgName("jar file")
                 .hasArg()
                 .withDescription("Custom Cilib jar file")
@@ -105,7 +104,7 @@ public class Config {
         o.addOption(help);
         o.addOption(user);
         o.addOption(file);
-        o.addOption(config);
+        //o.addOption(config);
         o.addOption(worker);
         o.addOption(jar);
         o.addOption(releaseType);
@@ -118,7 +117,8 @@ public class Config {
         return o;
     }
 
-    public static Properties getConfiguration(String file) {
+    private static void loadConfiguration(String file) {
+
         Properties p = new Properties();
 
         try {
@@ -136,8 +136,17 @@ public class Config {
                 System.exit(1);
             }
         }
+        System.out.println("Configuration loaded successfully");
+        
+        properties = p;
+    }
 
-        return p;
+    public synchronized static Properties getConfiguration() {
+        if (properties == null) {
+            loadConfiguration(configFile);
+        }
+        
+        return properties;
     }
 
 }

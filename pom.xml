@@ -50,8 +50,8 @@
     </dependency>
     <dependency>
       <groupId>com.hazelcast</groupId>
-      <artifactId>hazelcast</artifactId>
-      <version>2.0.4</version>
+      <artifactId>hazelcast-all</artifactId>
+      <version>2.3.1</version>
     </dependency>
   </dependencies>
   <build>

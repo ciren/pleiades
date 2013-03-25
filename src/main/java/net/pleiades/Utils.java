@@ -18,8 +18,8 @@ import net.pleiades.simulations.Simulation;
 
 public class Utils {
 
-    public static UserDBCommunicator connectToDatabase(Properties p) {
-        UserDBCommunicator db = new MySQLCommunicator(p);
+    public static UserDBCommunicator connectToDatabase() {
+        UserDBCommunicator db = new MySQLCommunicator();
 
         if(!db.connect()) {
             System.out.println("Error: Unable to connect to database.");
@@ -67,8 +67,8 @@ public class Utils {
         }
     }
 
-    public static UserDBCommunicator authenticate(Properties properties, String user) {
-        UserDBCommunicator database = Utils.connectToDatabase(properties);
+    public static UserDBCommunicator authenticate(String user) {
+        UserDBCommunicator database = Utils.connectToDatabase();
         int guesses = 3;
 
         while (!database.authenticateUser(user)) {
@@ -84,8 +84,8 @@ public class Utils {
         return database;
     }
 
-    public static boolean silentAuthenticate(Properties properties, String user, String password) {
-        UserDBCommunicator database = Utils.connectToDatabase(properties);
+    public static boolean silentAuthenticate(String user, String password) {
+        UserDBCommunicator database = Utils.connectToDatabase();
 
         return database.silentAuthenticateUser(user, password);
     }

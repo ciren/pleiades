@@ -1,0 +1,156 @@
+/**
+ * Pleiades
+ * Copyright (C) 2011 - 2012
+ * Computational Intelligence Research Group (CIRG@UP)
+ * Department of Computer Science
+ * University of Pretoria
+ * South Africa
+ */
+package net.pleiades.database;
+
+import com.hazelcast.util.ConcurrentHashSet;
+import com.mongodb.BasicDBObject;
+import com.mongodb.DB;
+import com.mongodb.DBCollection;
+import com.mongodb.DBCursor;
+import com.mongodb.DBObject;
+import com.mongodb.Mongo;
+import com.mongodb.WriteConcern;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import net.pleiades.persistence.PersistentSimulationsList;
+import net.pleiades.persistence.PersistentSimulationsMapObject;
+import net.pleiades.simulations.CilibSimulation;
+import net.pleiades.simulations.Simulation;
+
+/**
+ *
+ * @author bennie
+ */
+public class SimulationsMapStore {
+    private static final String configFile = "pleiades.conf"; //fix this if you can
+    private DBCollection jobs;
+
+    public SimulationsMapStore() {
+    }
+
+    public boolean connect() {
+        Properties properties = loadConfiguration();
+        
+        Mongo mongo;
+        String storeAddress = properties.getProperty("persistent_store_address");
+        int storePort = Integer.valueOf(properties.getProperty("persistent_store_port"));
+        String pass = properties.getProperty("persistent_store_password");
+        String user = properties.getProperty("persistent_store_user");
+        boolean auth = false;
+        
+        try {
+            mongo = new Mongo(storeAddress, storePort);
+            mongo.setWriteConcern(WriteConcern.SAFE);
+            DB db = mongo.getDB("Pleiades");
+            auth = db.authenticate(user, pass.toCharArray());
+            
+            jobs = db.getCollection(properties.getProperty("simulations_map"));
+            jobs.setObjectClass(PersistentSimulationsList.class);
+        } catch (Exception e) {
+            return false;
+        }
+        
+        return auth;
+    }
+
+    public void store(String k, List<Simulation> v) {
+        DBObject o = new PersistentSimulationsList(k, v);
+        BasicDBObject query = new BasicDBObject();
+
+        query.put("owner", o.get("owner"));
+        
+        if (jobs.find(query).toArray().isEmpty()) {
+            jobs.insert(o);
+        } else {
+            jobs.findAndModify(query, o);
+        }
+    }
+
+    public void storeAll(Map<String, List<Simulation>> map) {
+        for (String k : map.keySet()) {
+            store(k, map.get(k));
+        }
+    }
+
+    public void delete(String k) {
+        BasicDBObject query = new BasicDBObject();
+        query.put("owner", k);
+        
+        jobs.remove(query);
+    }
+
+    public void deleteAll(Collection<String> clctn) {
+        for (String k : clctn) {
+            delete(k);
+        }
+    }
+
+    public List<Simulation> load(String k) {
+        BasicDBObject query = new BasicDBObject();
+        query.put("owner", k);
+        
+        DBObject load = jobs.findOne(query);
+        
+        if (load == null) {
+            return null;
+        }
+        
+        ArrayList<DBObject> array = (ArrayList<DBObject>) load;
+        LinkedList<Simulation> list = new LinkedList<Simulation>();
+        
+        for (DBObject o : array) {
+            list.add(new CilibSimulation((PersistentSimulationsMapObject) o));
+        }
+        
+        return list;
+    }
+
+    public Map<String, List<Simulation>> loadAll(Collection<String> clctn) {
+        Map<String, List<Simulation>> map = new ConcurrentHashMap<String, List<Simulation>>();
+        
+        for (String k : clctn) {
+            map.put(k, load(k));
+        }
+        
+        return map;
+    }
+
+    public Set<String> loadAllKeys() {
+        Set<String> keys = new ConcurrentHashSet<String>();
+        BasicDBObject query = new BasicDBObject();
+        
+        DBCursor cursor = jobs.find(query);
+        
+        while (cursor.hasNext()) {
+            keys.add((String) cursor.next().get("owner"));
+        }
+        
+        return keys;
+    }
+    
+    private static Properties loadConfiguration() {
+        Properties p = new Properties();
+        
+        try {
+            p.load(new FileInputStream(configFile));
+        } catch (IOException e) {
+            throw new Error("Unable to load configuration file " + configFile);
+        }
+        
+        return p;
+    }
+}

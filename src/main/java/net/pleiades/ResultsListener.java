@@ -16,7 +16,6 @@ import com.hazelcast.core.IQueue;
 import com.hazelcast.core.Message;
 import com.hazelcast.core.MessageListener;
 import com.hazelcast.core.Transaction;
-import com.hazelcast.impl.base.RuntimeInterruptedException;
 import java.io.File;
 import java.util.Iterator;
 import java.util.List;
@@ -33,9 +32,9 @@ public class ResultsListener implements EntryListener, MessageListener<Task> {
     private SampleGatherer gatherer;
     private Properties properties;
 
-    public ResultsListener(Properties properties) {
-        this.gatherer = new CilibSampleGatherer(properties);
-        this.properties = properties;
+    public ResultsListener() {
+        this.gatherer = new CilibSampleGatherer();
+        this.properties = Config.getConfiguration();
 
         addListeners();
     }
@@ -79,17 +78,17 @@ public class ResultsListener implements EntryListener, MessageListener<Task> {
             checkAll();
             return;
         }
-        
+
         Task t = message.getMessageObject();
-        
+
         Lock rLock = Hazelcast.getLock(Config.runningMap);
         rLock.lock();
-        
+
         IMap<String, String> runningMap = Hazelcast.getMap(Config.runningMap);
-        
+
         Transaction txn = Hazelcast.getTransaction();
         txn.begin();
-        
+
         try {
             runningMap.remove(t.getId());
             txn.commit();
@@ -108,6 +107,7 @@ public class ResultsListener implements EntryListener, MessageListener<Task> {
 
         txn.begin();
 
+        boolean gathering = false;
         try {
             Simulation cSimulation = completedMap.get(t.getParent().getID());
 
@@ -116,7 +116,7 @@ public class ResultsListener implements EntryListener, MessageListener<Task> {
                 throw new Exception("No such simulation");
             }
             cSimulation.completeTask(t, properties);
-            
+
             if (cSimulation.isComplete()) {
                 completedMap.remove(t.getParent().getID());
                 System.out.println("\nGathering: " + cSimulation.getID());
@@ -125,6 +125,8 @@ public class ResultsListener implements EntryListener, MessageListener<Task> {
                 jLock.lock();
                 IMap<String, List<Simulation>> simulationsMap = Hazelcast.getMap(Config.simulationsMap);
 
+                gathering = true;
+                
                 gatherer.gatherResults(simulationsMap, completedMap, cSimulation);
                 simulationsMap.forceUnlock(cSimulation.getOwner());
 
@@ -158,7 +160,9 @@ public class ResultsListener implements EntryListener, MessageListener<Task> {
             e.printStackTrace();
             txn.rollback();
         } finally {
-            jLock.unlock();
+            if (gathering) {
+                jLock.unlock();
+            }
             cLock.unlock();
         }
     }
@@ -187,8 +191,6 @@ public class ResultsListener implements EntryListener, MessageListener<Task> {
                 }
                 completedMap.forceUnlock(cSimulation.getID());
                 txn.commit();
-            } catch (RuntimeInterruptedException e) {
-                Thread.currentThread().interrupt();
             } catch (Throwable e) {
                 System.out.println("ERROR:");
                 e.printStackTrace();

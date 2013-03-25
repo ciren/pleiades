@@ -89,7 +89,7 @@ public class Distributor implements MessageListener<String>, Runnable {
 
             List<Simulation> collection = jobsMap.remove(key);
             if (collection == null) {
-                throw new Exception("Simulation " + key + "not found.");
+                throw new Exception("No simulations found for user: " + key);
             }
 
             for (Simulation s : collection) {

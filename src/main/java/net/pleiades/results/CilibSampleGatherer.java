@@ -37,8 +37,8 @@ public class CilibSampleGatherer implements SampleGatherer {
 
     private Properties properties;
 
-    public CilibSampleGatherer(Properties properties) {
-        this.properties = properties;
+    public CilibSampleGatherer() {
+        this.properties = Config.getConfiguration();
     }
 
     @Override

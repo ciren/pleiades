@@ -27,8 +27,8 @@ import net.pleiades.tasks.Task;
 public class ErrorListener implements MessageListener<Task> {
     private Properties properties;
 
-    public ErrorListener(Properties properties) {
-        this.properties = properties;
+    public ErrorListener() {
+        this.properties = Config.getConfiguration();
 
         addListeners();
     }

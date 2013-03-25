@@ -16,12 +16,12 @@ import net.pleiades.simulations.Simulation;
  *
  * @author bennie
  */
-public class PersistentCilibSimulation extends BasicDBObject {
+public class PersistentCompletedMapObject extends BasicDBObject {
 
-    public PersistentCilibSimulation() {
+    public PersistentCompletedMapObject() {
     }
 
-    public PersistentCilibSimulation(Simulation s) {
+    public PersistentCompletedMapObject(Simulation s) {
         //put("cilibInput", s.getCilibInput());
         put("fileKey", s.getFileKey());
         put("outputFileName", s.getOutputFileName());

@@ -12,6 +12,7 @@ import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.Message;
 import com.hazelcast.core.MessageListener;
 import java.io.IOException;
+import java.util.Enumeration;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
@@ -29,15 +30,15 @@ public class WorkerPool {
     TaskDistributor distributor = null;
     State state;
 
-    public WorkerPool(Properties p, int count, boolean quiet) {
-        this.properties = p;
-
+    public WorkerPool(int count, boolean quiet) {
+        this.properties = Config.getConfiguration();
+        
         try {
             this.workers = new TaskExecutor[count];
             this.con = new ConsoleReader();
-
+            
             for (int i = 0; i < count; i++) {
-                workers[i] = new TaskExecutor(p, String.valueOf(i));
+                workers[i] = new TaskExecutor(String.valueOf(i));
             }
 
             this.quiet = quiet;
@@ -48,14 +49,14 @@ public class WorkerPool {
 
     public void execute() {
         Thread dThread = null;
-
-        if (Utils.silentAuthenticate(properties, "distributor", properties.getProperty("distributor_password"))) {
+        
+        if (Utils.silentAuthenticate("distributor", properties.getProperty("distributor_password"))) {
             distributor = new TaskDistributor(dLock);
             dThread = new Thread(distributor);
             dThread.setPriority(10);
             dThread.start();
         }
-
+        
         try {
             for (int i = 0; i < workers.length; i++) {
                 System.out.println("Starting worker " + i);
@@ -63,7 +64,6 @@ public class WorkerPool {
             }
 
             state = State.WORKING;
-
             new Thread(new Reader()).start();
 
             if (!quiet) {

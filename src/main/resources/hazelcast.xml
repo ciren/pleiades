@@ -4,7 +4,7 @@
            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
     <group>
         <name>Pleiades</name>
-        <password></password>
+        <password>pleiades12358</password>
     </group>
     <network>
         <port auto-increment="true">5701</port>
@@ -14,7 +14,9 @@
                 <multicast-port>54327</multicast-port>
             </multicast>
             <tcp-ip enabled="true">
-                <!-- include interfaces here -->
+            <!--<interface>ip</interface>
+		<interface>ip</interface>
+                <interface>ip</interface>-->
             </tcp-ip>
              <aws enabled="false">
 		        <access-key>my-access-key</access-key>
@@ -28,7 +30,7 @@
 		    </aws>
         </join>
         <interfaces enabled="true">
-            <interface>137.215.*.*</interface>
+            <interface>*.*.*.*</interface>
         </interfaces>
         <symmetric-encryption enabled="false">
             <!--
@@ -166,6 +168,15 @@
         <merge-policy>hz.ADD_NEW_ENTRY</merge-policy>
     </map>
     <map name="simulationsMap">
+	<map-store enabled="true">
+            <!--
+               Name of the class implementing MapLoader and/or MapStore.
+               The class should implement at least of these interfaces and
+               contain no-argument constructor. Note that the inner classes are not supported.
+            -->
+            <class-name>net.pleiades.persistence.SimulationsMapPersistence</class-name>
+            <write-delay-seconds>0</write-delay-seconds>
+        </map-store>
         <backup-count>1</backup-count>
         <time-to-live-seconds>0</time-to-live-seconds>
         <max-idle-seconds>0</max-idle-seconds>
@@ -184,15 +195,6 @@
         <merge-policy>hz.ADD_NEW_ENTRY</merge-policy>
     </map>
     <map name="fileMap">
-        <backup-count>1</backup-count>
-        <time-to-live-seconds>0</time-to-live-seconds>
-        <max-idle-seconds>0</max-idle-seconds>
-        <eviction-policy>NONE</eviction-policy>
-        <max-size policy="cluster_wide_map_size">0</max-size>
-        <eviction-percentage>0</eviction-percentage>
-        <merge-policy>hz.ADD_NEW_ENTRY</merge-policy>
-    </map>
-    <map name="simulationsMap">
         <backup-count>1</backup-count>
         <time-to-live-seconds>0</time-to-live-seconds>
         <max-idle-seconds>0</max-idle-seconds>

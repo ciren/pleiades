@@ -14,6 +14,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Properties;
+import net.pleiades.Config;
 import net.pleiades.utility.SHA256;
 
 /**
@@ -22,14 +23,14 @@ import net.pleiades.utility.SHA256;
  */
 public class MySQLCommunicator implements UserDBCommunicator {
     Connection connection;
-    Properties properties;
 
-    public MySQLCommunicator(Properties p) {
-        this.properties = p;
+    public MySQLCommunicator() {
     }
 
     @Override
     public boolean connect() {
+        Properties properties = Config.getConfiguration();
+        
         String url = properties.getProperty("db_url");
         String user = properties.getProperty("db_user");
         String pass = properties.getProperty("db_pass");

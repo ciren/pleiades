@@ -22,7 +22,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import net.pleiades.Config;
-import net.pleiades.persistence.PersistentCilibSimulation;
+import net.pleiades.persistence.PersistentCompletedMapObject;
+import net.pleiades.persistence.PersistentSimulationsMapObject;
 import net.pleiades.tasks.CilibXMLTask;
 import net.pleiades.tasks.Task;
 
@@ -76,7 +77,22 @@ public class CilibSimulation extends BasicDBObject implements Simulation, Serial
         this.releaseType = other.releaseType;
     }
 
-    public CilibSimulation(PersistentCilibSimulation p) {
+    public CilibSimulation(PersistentCompletedMapObject p) {
+        this.owner = p.owner();
+        this.ownerEmail = p.ownerEmail();
+        this.jobName = p.jobName();
+        this.samples = p.samples();
+        this.id = p.id();
+        this.outputFileName = p.outputFileName();
+        this.outputPath = p.outputPath();
+        this.results = p.results();
+        this.fileKey = p.fileKey();
+        this.releaseType = p.releaseType();
+
+        this.cilibInput = p.cilibInput();
+    }
+    
+    public CilibSimulation(PersistentSimulationsMapObject p) {
         this.owner = p.owner();
         this.ownerEmail = p.ownerEmail();
         this.jobName = p.jobName();

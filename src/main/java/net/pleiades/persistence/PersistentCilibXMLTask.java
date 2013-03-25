@@ -19,11 +19,6 @@ public class PersistentCilibXMLTask extends BasicDBObject {
     public PersistentCilibXMLTask(Task t) {
         put("cilibInput", t.getInput());
         put("id", t.getId());
-//        private String cilibInput;
-//        private String id;
-//        private String results, error;
-//        private String progress;
-//        private Simulation parent;
     }
     
     public String cilibInput() {

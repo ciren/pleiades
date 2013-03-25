@@ -10,34 +10,35 @@ package net.pleiades.persistence;
 
 import com.hazelcast.core.MapStore;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import net.pleiades.database.CompletedMapStore;
+import net.pleiades.database.SimulationsMapStore;
 import net.pleiades.simulations.Simulation;
 
 /**
  *
  * @author bennie
  */
-public class CompletedMapPersistence implements MapStore<String, Simulation> {
-    private static CompletedMapStore store;
-
-    public CompletedMapPersistence() throws Exception {
-        store = new CompletedMapStore();
+public class SimulationsMapPersistence implements MapStore<String, List<Simulation>> {
+    private static SimulationsMapStore store;
+    
+    public SimulationsMapPersistence() throws Exception {
+        store = new SimulationsMapStore();
         if (!store.connect()) {
             System.out.println("ERROR: Unable to connect to persistent store. Contact administrator.");
             System.exit(1);
         }
-        System.out.println("Connected to completed store");
+        System.out.println("Connected to simulations store");
     }
-
+    
     @Override
-    public void store(String k, Simulation v) {
+    public void store(String k, List<Simulation> v) {
         store.store(k, v);
     }
 
     @Override
-    public void storeAll(Map<String, Simulation> map) {
+    public void storeAll(Map<String, List<Simulation>> map) {
         store.storeAll(map);
     }
 
@@ -52,12 +53,12 @@ public class CompletedMapPersistence implements MapStore<String, Simulation> {
     }
 
     @Override
-    public Simulation load(String k) {
+    public List<Simulation> load(String k) {
         return store.load(k);
     }
 
     @Override
-    public Map<String, Simulation> loadAll(Collection<String> clctn) {
+    public Map<String, List<Simulation>> loadAll(Collection<String> clctn) {
         return store.loadAll(clctn);
     }
 

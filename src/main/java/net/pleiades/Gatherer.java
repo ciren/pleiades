@@ -31,14 +31,14 @@ import net.pleiades.tasks.CilibXMLTask;
 public class Gatherer {
     Properties properties;
 
-    public Gatherer(Properties p) {
-        this.properties = p;
+    public Gatherer() {
+        this.properties = Config.getConfiguration();
     }
 
     public void start(boolean cont) {
-        Utils.authenticate(properties, "admin");
-        new ResultsListener(properties).execute();
-        new ErrorListener(properties).exexcute();
+        Utils.authenticate("admin");
+        new ResultsListener().execute();
+        new ErrorListener().exexcute();
 
         if (cont) {
             continueSimulations();

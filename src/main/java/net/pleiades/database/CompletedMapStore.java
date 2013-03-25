@@ -16,13 +16,14 @@ import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
 import com.mongodb.Mongo;
 import com.mongodb.WriteConcern;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import net.pleiades.persistence.PersistentCilibSimulation;
-import net.pleiades.persistence.PersistentStoreCommunicator;
+import net.pleiades.persistence.PersistentCompletedMapObject;
 import net.pleiades.simulations.CilibSimulation;
 import net.pleiades.simulations.Simulation;
 
@@ -30,16 +31,15 @@ import net.pleiades.simulations.Simulation;
  *
  * @author bennie
  */
-public class MongoCommunicator implements PersistentStoreCommunicator {
-    private static Properties properties;
-    private DBCollection simulations;
+public class CompletedMapStore {
+    private static final String configFile = "pleiades.conf"; //fix this if you can
+    private DBCollection results;
 
-    public MongoCommunicator(Properties p) {
-        MongoCommunicator.properties = p;
+    public CompletedMapStore() {
     }
-    
-    @Override
+
     public boolean connect() {
+        Properties properties = loadConfiguration();
         Mongo mongo;
         String storeAddress = properties.getProperty("persistent_store_address");
         int storePort = Integer.valueOf(properties.getProperty("persistent_store_port"));
@@ -50,12 +50,10 @@ public class MongoCommunicator implements PersistentStoreCommunicator {
         try {
             mongo = new Mongo(storeAddress, storePort);
             mongo.setWriteConcern(WriteConcern.SAFE);
-            
             DB db = mongo.getDB("Pleiades");
             auth = db.authenticate(user, pass.toCharArray());
-            
-            simulations = db.getCollection("simulations");
-            simulations.setObjectClass(PersistentCilibSimulation.class);
+            results = db.getCollection(properties.getProperty("completed_map"));
+            results.setObjectClass(PersistentCompletedMapObject.class);
         } catch (Exception e) {
             return false;
         }
@@ -63,93 +61,85 @@ public class MongoCommunicator implements PersistentStoreCommunicator {
         return auth;
     }
 
-    @Override
-    public void store(DBObject o) {
+    public void store(String k, Simulation v) {
+        DBObject o = new PersistentCompletedMapObject(v);
         BasicDBObject query = new BasicDBObject();
 
         query.put("id", o.get("id"));
         
-        if (simulations.find(query).toArray().isEmpty()) {
-            simulations.insert(o);
+        if (results.find(query).toArray().isEmpty()) {
+            results.insert(o);
         } else {
-            simulations.findAndModify(query, o);
+            results.findAndModify(query, o);
         }
     }
 
-    @Override
     public Simulation load(String k) {
         BasicDBObject query = new BasicDBObject();
         query.put("id", k);
         
-        Simulation s = new CilibSimulation((PersistentCilibSimulation) simulations.findOne(query));
+        DBObject load = results.findOne(query);
+        
+        if (load == null) {
+            return null;
+        }
+        
+        Simulation s = new CilibSimulation((PersistentCompletedMapObject) load);
         
         return s;
     }
 
-    @Override
     public void storeAll(Map<String, Simulation> map) {
-        BasicDBObject query;
-
         for (String k : map.keySet()) {
-            Simulation current = map.get(k);
-            PersistentCilibSimulation persist = new PersistentCilibSimulation(current);
-            query = new BasicDBObject();
-            query.put("id", current.getID());
-
-            if (simulations.find(query).toArray().isEmpty()) {
-                simulations.insert(persist);
-            } else {
-                simulations.findAndModify(query, persist);
-            }
+            store(k, map.get(k));
         }
     }
 
-    @Override
     public void delete(String k) {
         BasicDBObject query = new BasicDBObject();
         query.put("id", k);
         
-        simulations.remove(query);
+        results.remove(query);
     }
 
-    @Override
     public void deleteAll(Collection<String> clctn) {
-        BasicDBObject query;
-        
         for (String k : clctn) {
-            query = new BasicDBObject();
-            query.put("id", k);
-            
-            simulations.remove(query);
+            delete(k);
         }
     }
 
-    @Override
     public Map<String, Simulation> loadAll(Collection<String> clctn) {
         Map<String, Simulation> sims = new ConcurrentHashMap<String, Simulation>();
-        BasicDBObject query;
         
         for (String k : clctn) {
-            query = new BasicDBObject();
-            query.put("id", k);
-            
-            sims.put(k, new CilibSimulation((PersistentCilibSimulation)simulations.findOne(query)));
+            sims.put(k, load(k));
         }
         
         return sims;
     }
 
-    @Override
     public Set<String> loadAllKeys() {
         Set<String> keys = new ConcurrentHashSet<String>();
         BasicDBObject query = new BasicDBObject();
         
-        DBCursor cursor = simulations.find(query);
+        DBCursor cursor = results.find(query);
         
         while (cursor.hasNext()) {
             keys.add((String) cursor.next().get("id"));
         }
         
         return keys;
+    }
+    
+    private static Properties loadConfiguration() {
+        Properties p = new Properties();
+        
+        try {
+            p.load(new FileInputStream(configFile));
+        } catch (IOException e) {
+            throw new Error("Unable to load configuration file " + configFile);
+        }
+        
+        return p;
     }
 }

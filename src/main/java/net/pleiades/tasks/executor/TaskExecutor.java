@@ -30,11 +30,11 @@ public class TaskExecutor implements Executor, Runnable, MessageListener<Map<Str
     protected Properties properties;
     protected String id;
 
-    public TaskExecutor(Properties properties, String id) {
+    public TaskExecutor(String id) {
         this.id = Hazelcast.getCluster().getLocalMember().getInetSocketAddress().toString() + "-" + id;
         this.state = IDLE;
         this.running = false;
-        this.properties = properties;
+        this.properties = Config.getConfiguration();
 
         addListeners();
     }

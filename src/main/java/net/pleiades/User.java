@@ -21,7 +21,7 @@ import net.pleiades.simulations.creator.SimulationsCreator;
 import net.pleiades.simulations.creator.XMLSimulationsCreator;
 
 public class User {
-    public static void uploadJob(Properties properties, String input, String jar, String user, String userEmail, String releaseType) {
+    public static void uploadJob(String input, String jar, String user, String userEmail, String releaseType) {
         File run = null;
         byte[] runBytes = null;
 
@@ -92,7 +92,7 @@ public class User {
             simulationsMap.put(user, jobsList);
             txn.commit();
 
-            System.out.println("> 100% >");
+            System.out.println("100% >");
         } catch (Throwable e) {
             e.printStackTrace();
             txn.rollback();

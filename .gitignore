@@ -1,11 +1,14 @@
 target
 pleiades
 !src/main/java/net/pleiades*
+pleiades.conf
+!src/main/resources/pleiades.conf
 data
 *.txt
 *.log
 *.jar
 *.xml
 !pom.xml
+!src/main/resources/hazelcast.xml
 *.run
 *~
