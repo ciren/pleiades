@@ -8,6 +8,7 @@
  */
 package net.pleiades.database;
 
+import com.hazelcast.core.MapStore;
 import com.hazelcast.util.ConcurrentHashSet;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DB;
@@ -35,14 +36,19 @@ import net.pleiades.simulations.Simulation;
  *
  * @author bennie
  */
-public class SimulationsMapStore {
+public class SimulationsMapStore implements MapStore<String, List<Simulation>> {
     private static final String configFile = "pleiades.conf"; //fix this if you can
     private DBCollection jobs;
 
     public SimulationsMapStore() {
+        if (!connect()) {
+            System.out.println("ERROR: Unable to connect to persistent store. Contact administrator.");
+            System.exit(1);
+        }
+        System.out.println("Connected to simulations store");
     }
 
-    public boolean connect() {
+    private boolean connect() {
         Properties properties = loadConfiguration();
         
         Mongo mongo;
@@ -67,6 +73,7 @@ public class SimulationsMapStore {
         return auth;
     }
 
+    @Override
     public void store(String k, List<Simulation> v) {
         DBObject o = new PersistentSimulationsList(k, v);
         BasicDBObject query = new BasicDBObject();
@@ -80,12 +87,14 @@ public class SimulationsMapStore {
         }
     }
 
+    @Override
     public void storeAll(Map<String, List<Simulation>> map) {
         for (String k : map.keySet()) {
             store(k, map.get(k));
         }
     }
 
+    @Override
     public void delete(String k) {
         BasicDBObject query = new BasicDBObject();
         query.put("owner", k);
@@ -93,12 +102,14 @@ public class SimulationsMapStore {
         jobs.remove(query);
     }
 
+    @Override
     public void deleteAll(Collection<String> clctn) {
         for (String k : clctn) {
             delete(k);
         }
     }
 
+    @Override
     public List<Simulation> load(String k) {
         BasicDBObject query = new BasicDBObject();
         query.put("owner", k);
@@ -119,6 +130,7 @@ public class SimulationsMapStore {
         return list;
     }
 
+    @Override
     public Map<String, List<Simulation>> loadAll(Collection<String> clctn) {
         Map<String, List<Simulation>> map = new ConcurrentHashMap<String, List<Simulation>>();
         
@@ -129,6 +141,7 @@ public class SimulationsMapStore {
         return map;
     }
 
+    @Override
     public Set<String> loadAllKeys() {
         Set<String> keys = new ConcurrentHashSet<String>();
         BasicDBObject query = new BasicDBObject();

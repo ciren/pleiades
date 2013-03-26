@@ -1,5 +1,4 @@
-/**
- * Pleiades
+/* Pleiades
  * Copyright (C) 2011 - 2012
  * Computational Intelligence Research Group (CIRG@UP)
  * Department of Computer Science
@@ -24,26 +23,24 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import net.pleiades.persistence.PersistentCompletedMapObject;
-import net.pleiades.simulations.CilibSimulation;
-import net.pleiades.simulations.Simulation;
+import net.pleiades.persistence.PersistentFileMapObject;
 
 /**
  *
  * @author bennie
  */
-public class CompletedMapStore implements MapStore<String, Simulation> {
+public class FileMapStore implements MapStore<String, byte[]> {
     private static final String configFile = "pleiades.conf"; //fix this if you can
-    private DBCollection results;
+    private DBCollection files;
 
-    public CompletedMapStore() {
+    public FileMapStore() {
         if (!connect()) {
             System.out.println("ERROR: Unable to connect to persistent store. Contact administrator.");
             System.exit(1);
         }
-        System.out.println("Connected to completed store");
+        System.out.println("Connected to files store");
     }
-
+    
     private boolean connect() {
         Properties properties = loadConfiguration();
         Mongo mongo;
@@ -58,47 +55,31 @@ public class CompletedMapStore implements MapStore<String, Simulation> {
             mongo.setWriteConcern(WriteConcern.SAFE);
             DB db = mongo.getDB("Pleiades");
             auth = db.authenticate(user, pass.toCharArray());
-            results = db.getCollection(properties.getProperty("completed_map"));
-            results.setObjectClass(PersistentCompletedMapObject.class);
+            files = db.getCollection(properties.getProperty("file_map"));
+            files.setObjectClass(PersistentFileMapObject.class);
         } catch (Exception e) {
             return false;
         }
         
         return auth;
     }
-
+    
     @Override
-    public void store(String k, Simulation v) {
-        DBObject o = new PersistentCompletedMapObject(v);
-        BasicDBObject query = new BasicDBObject();
-
-        query.put("id", o.get("id"));
+    public void store(String k, byte[] v) {
+        DBObject o = new PersistentFileMapObject(k, v);
         
-        if (results.find(query).toArray().isEmpty()) {
-            results.insert(o);
+        BasicDBObject query = new BasicDBObject();
+        query.put("file_key", k);
+        
+        if (files.find(query).toArray().isEmpty()) {
+            files.insert(o);
         } else {
-            results.findAndModify(query, o);
+            files.findAndModify(query, o);
         }
     }
 
     @Override
-    public Simulation load(String k) {
-        BasicDBObject query = new BasicDBObject();
-        query.put("id", k);
-        
-        DBObject load = results.findOne(query);
-        
-        if (load == null) {
-            return null;
-        }
-        
-        Simulation s = new CilibSimulation((PersistentCompletedMapObject) load);
-        
-        return s;
-    }
-
-    @Override
-    public void storeAll(Map<String, Simulation> map) {
+    public void storeAll(Map<String, byte[]> map) {
         for (String k : map.keySet()) {
             store(k, map.get(k));
         }
@@ -107,9 +88,9 @@ public class CompletedMapStore implements MapStore<String, Simulation> {
     @Override
     public void delete(String k) {
         BasicDBObject query = new BasicDBObject();
-        query.put("id", k);
+        query.put("file_key", k);
         
-        results.remove(query);
+        files.remove(query);
     }
 
     @Override
@@ -120,14 +101,28 @@ public class CompletedMapStore implements MapStore<String, Simulation> {
     }
 
     @Override
-    public Map<String, Simulation> loadAll(Collection<String> clctn) {
-        Map<String, Simulation> sims = new ConcurrentHashMap<String, Simulation>();
+    public byte[] load(String k) {
+        BasicDBObject query = new BasicDBObject();
+        query.put("file_key", k);
         
-        for (String k : clctn) {
-            sims.put(k, load(k));
+        DBObject load = files.findOne(query);
+        
+        if (load == null) {
+            return null;
         }
         
-        return sims;
+        return ((PersistentFileMapObject)load).file();
+    }
+
+    @Override
+    public Map<String, byte[]> loadAll(Collection<String> clctn) {
+        Map<String, byte[]> file_map = new ConcurrentHashMap<String, byte[]>();
+        
+        for (String k : clctn) {
+            file_map.put(k, load(k));
+        }
+        
+        return file_map;
     }
 
     @Override
@@ -135,10 +130,10 @@ public class CompletedMapStore implements MapStore<String, Simulation> {
         Set<String> keys = new ConcurrentHashSet<String>();
         BasicDBObject query = new BasicDBObject();
         
-        DBCursor cursor = results.find(query);
+        DBCursor cursor = files.find(query);
         
         while (cursor.hasNext()) {
-            keys.add((String) cursor.next().get("id"));
+            keys.add((String) (cursor.next()).get("file_key"));
         }
         
         return keys;

@@ -11,8 +11,7 @@ package net.pleiades.simulations.selection;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import javax.management.RuntimeOperationsException;
-import net.pleiades.persistence.SimulationsMapPersistence;
+import net.pleiades.database.SimulationsMapStore;
 import net.pleiades.simulations.Simulation;
 
 /**
@@ -26,10 +25,10 @@ public class EqualProbabilitySelector implements SimulationSelector {
         //RandomProvider random = new MersenneTwister();
         Random random = new Random();
         
-        SimulationsMapPersistence simulationsDB;
+        SimulationsMapStore simulationsDB;
                 
         try {
-            simulationsDB = new SimulationsMapPersistence();
+            simulationsDB = new SimulationsMapStore();
         } catch (Exception e) {
             throw new Error("Unable to connect to persistent store. Aborting.");
         }

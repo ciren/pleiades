@@ -156,7 +156,7 @@
                The class should implement at least of these interfaces and
                contain no-argument constructor. Note that the inner classes are not supported.
             -->
-            <class-name>net.pleiades.persistence.CompletedMapPersistence</class-name>
+            <class-name>net.pleiades.database.CompletedMapStore</class-name>
             <write-delay-seconds>0</write-delay-seconds>
         </map-store>
         <backup-count>1</backup-count>
@@ -174,7 +174,7 @@
                The class should implement at least of these interfaces and
                contain no-argument constructor. Note that the inner classes are not supported.
             -->
-            <class-name>net.pleiades.persistence.SimulationsMapPersistence</class-name>
+            <class-name>net.pleiades.database.SimulationsMapStore</class-name>
             <write-delay-seconds>0</write-delay-seconds>
         </map-store>
         <backup-count>1</backup-count>
@@ -186,6 +186,15 @@
         <merge-policy>hz.ADD_NEW_ENTRY</merge-policy>
     </map>
     <map name="runningMap">
+	<map-store enabled="true">
+            <!--
+               Name of the class implementing MapLoader and/or MapStore.
+               The class should implement at least of these interfaces and
+               contain no-argument constructor. Note that the inner classes are not supported.
+            -->
+            <class-name>net.pleiades.database.RunningMapStore</class-name>
+            <write-delay-seconds>0</write-delay-seconds>
+        </map-store>
         <backup-count>1</backup-count>
         <time-to-live-seconds>0</time-to-live-seconds>
         <max-idle-seconds>0</max-idle-seconds>
@@ -195,6 +204,15 @@
         <merge-policy>hz.ADD_NEW_ENTRY</merge-policy>
     </map>
     <map name="fileMap">
+	<map-store enabled="true">
+            <!--
+               Name of the class implementing MapLoader and/or MapStore.
+               The class should implement at least of these interfaces and
+               contain no-argument constructor. Note that the inner classes are not supported.
+            -->
+            <class-name>net.pleiades.database.FileMapStore</class-name>
+            <write-delay-seconds>0</write-delay-seconds>
+        </map-store>
         <backup-count>1</backup-count>
         <time-to-live-seconds>0</time-to-live-seconds>
         <max-idle-seconds>0</max-idle-seconds>

@@ -1,4 +1,4 @@
- /* Pleiades
+/* Pleiades
  * Copyright (C) 2011 - 2012
  * Computational Intelligence Research Group (CIRG@UP)
  * Department of Computer Science
@@ -34,6 +34,10 @@ public class PersistentSimulationsList extends BasicDBObject {
         }
         
         put("simulations", array);
+    }
+    
+    public String owner() {
+        return (String) get("owner");
     }
 
     public List<Simulation> simulations() {
