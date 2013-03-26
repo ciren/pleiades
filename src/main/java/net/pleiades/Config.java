@@ -56,12 +56,6 @@ public class Config {
                 .withDescription("Cilib input file")
                 .withLongOpt("input")
                 .create("i");
-        
-//        Option config = OptionBuilder.withArgName("config file")
-//                .hasArg()
-//                .withDescription("Pleiades configuration file (default: \"pleiades.conf\")")
-//                .withLongOpt("config")
-//                .create("c");
 
         Option worker = OptionBuilder.withArgName("worker count quietMode")
                 .withDescription("Start Pleiades member in worker mode (ignores all other options)")
@@ -93,10 +87,6 @@ public class Config {
                 .withLongOpt("gatherer")
                 .create("g");
 
-        Option monitor = OptionBuilder.withDescription("Start a Pleiades member in monitor mode (ignores all other options)")
-                .withLongOpt("monitor")
-                .create("m");
-
         Option verbose = OptionBuilder.withDescription("Hides the Pleiades text output to allow normal output stream to be displayed")
                 .withLongOpt("quiet")
                 .create("q");
@@ -104,13 +94,11 @@ public class Config {
         o.addOption(help);
         o.addOption(user);
         o.addOption(file);
-        //o.addOption(config);
         o.addOption(worker);
         o.addOption(jar);
         o.addOption(releaseType);
         o.addOption(register);
         o.addOption(gatherer);
-        o.addOption(monitor);
         o.addOption(verbose);
         o.addOption(cont);
 
@@ -136,7 +124,7 @@ public class Config {
                 System.exit(1);
             }
         }
-        System.out.println("Configuration loaded successfully");
+        System.out.println(">[Configuration loaded successfully]");
         
         properties = p;
     }

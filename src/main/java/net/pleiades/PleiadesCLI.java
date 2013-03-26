@@ -11,7 +11,6 @@ package net.pleiades;
 import com.google.common.base.Preconditions;
 import com.hazelcast.core.Hazelcast;
 import java.util.Arrays;
-import java.util.Properties;
 import net.pleiades.cluster.HazelcastCommunicator;
 import net.pleiades.database.UserDBCommunicator;
 import org.apache.commons.cli.*;
@@ -32,7 +31,7 @@ public class PleiadesCLI {
             CommandLine cli = parser.parse(options, args);
             handleCommandline(options, cli, args);
         } catch (ParseException e) {
-            System.err.println("Error: Failed to parse command line arguments. Use --help to see options.\n" + e.getMessage());
+            System.err.println(">Error: Failed to parse command line arguments. Use --help to see options.\n" + e.getMessage());
             System.exit(1);
         }
     }
@@ -46,11 +45,11 @@ public class PleiadesCLI {
         int clusterSize = Hazelcast.getCluster().getMembers().size();
 
         if (clusterSize < MIN_MEMBERS) {
-            System.out.println("Error: Too few cluster members active.>Connection terminated. If problem persists, contact cluster administrator.");
+            System.out.println(">Error: Too few cluster members active.>Connection terminated. If problem persists, contact cluster administrator.");
             System.exit(0);
         }
 
-        System.out.println("Now connected to Pleiades Cluster (" + clusterSize +" members).>You are logged in as " + user + ".>");
+        System.out.println(">>Now connected to Pleiades Cluster (" + clusterSize +" members).>You are logged in as " + user + ".>");
 
         if (cli.hasOption("input") && cli.hasOption("release-type") && cli.hasOption("jar")) {
 
@@ -60,18 +59,18 @@ public class PleiadesCLI {
             //boolean cont = cli.hasOption("continue"); //for the future
 
             if (!Arrays.asList("master", "official", "custom").contains(releaseType.toLowerCase())) {
-                System.out.println("Error: Valid arguments for 'release-type' are 'official', 'master' and 'custom'.");
+                System.out.println(">Error: Valid arguments for 'release-type' are 'official', 'master' and 'custom'.");
                 System.exit(1);
             }
 
             if (jar == null) {
-                System.out.println("Error: Option 'jar' takes an argument.");
+                System.out.println(">Error: Option 'jar' takes an argument.");
                 System.exit(1);
             }
 
             User.uploadJob(input, jar, user, database.getUserEmail(user), releaseType);
         } else {
-            System.out.println("Error: Options 'jar', 'input' and 'release-type' are required with option 'user'.");
+            System.out.println(">Error: Options 'jar', 'input' and 'release-type' are required with option 'user'.");
             System.exit(1);
         }
     }
@@ -81,7 +80,7 @@ public class PleiadesCLI {
     }
 
     private static void handleCommandline(Options options, CommandLine cli, String args[]) {
-        Preconditions.checkState(args.length > 0, "Error: You must either specify a user or start Pleiades member in worker mode! Use --help for more options.");
+        Preconditions.checkState(args.length > 0, ">Error: You must either specify a user or start Pleiades member in worker mode! Use --help for more options.");
 
         if (cli.hasOption("help")) {
             new HelpFormatter().printHelp("Pleiades", options);
@@ -102,14 +101,11 @@ public class PleiadesCLI {
                 Preconditions.checkState(cli.hasOption("continue"), "Gatherer can only be used with option --continue");
             }
             new Gatherer().start(cli.hasOption("continue"));
-        } else if (cli.hasOption("monitor")) {
-            Preconditions.checkState(cli.getOptions().length == 1, "Option --monitor must be used without any other options.");
-            System.out.println("Monitor is no longer supported in cli mode."); System.exit(0);
         } else if (cli.hasOption("user")) {
             String user = cli.getOptionValue("user");
             user(cli, user);
         } else {
-            System.out.println("Error: You must specify a user or start Pleiades in worker mode! Use --help for more options.");
+            System.out.println(">Error: You must specify a user or start Pleiades in worker mode! Use --help for more options.");
         }
     }
 }

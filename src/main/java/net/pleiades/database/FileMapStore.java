@@ -35,10 +35,10 @@ public class FileMapStore implements MapStore<String, byte[]> {
 
     public FileMapStore() {
         if (!connect()) {
-            System.out.println("ERROR: Unable to connect to persistent store. Contact administrator.");
+            System.out.println(">ERROR: Unable to connect to persistent store. Contact administrator.");
             System.exit(1);
         }
-        System.out.println("Connected to files store");
+        System.out.println(">[Connected to files map store]");
     }
     
     private boolean connect() {
@@ -145,7 +145,7 @@ public class FileMapStore implements MapStore<String, byte[]> {
         try {
             p.load(new FileInputStream(configFile));
         } catch (IOException e) {
-            throw new Error("Unable to load configuration file " + configFile);
+            throw new Error(">ERROR: Unable to load configuration file " + configFile);
         }
         
         return p;

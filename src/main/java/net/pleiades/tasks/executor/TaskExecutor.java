@@ -94,10 +94,11 @@ public class TaskExecutor implements Executor, Runnable, MessageListener<Map<Str
 
     @Override
     public void run() {
+        int delay = Integer.valueOf(properties.getProperty("post_execution_delay"));
         running = true;
 
         while (true) {
-            Utils.sleep(5000);
+            Utils.sleep(delay);
 
             if (currentTask != null) {
                 executeTask();

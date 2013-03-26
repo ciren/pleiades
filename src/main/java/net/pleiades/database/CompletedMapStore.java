@@ -38,10 +38,10 @@ public class CompletedMapStore implements MapStore<String, Simulation> {
 
     public CompletedMapStore() {
         if (!connect()) {
-            System.out.println("ERROR: Unable to connect to persistent store. Contact administrator.");
+            System.out.println(">ERROR: Unable to connect to persistent store. Contact administrator.");
             System.exit(1);
         }
-        System.out.println("Connected to completed store");
+        System.out.println(">[Connected to results map store]");
     }
 
     private boolean connect() {
@@ -150,7 +150,7 @@ public class CompletedMapStore implements MapStore<String, Simulation> {
         try {
             p.load(new FileInputStream(configFile));
         } catch (IOException e) {
-            throw new Error("Unable to load configuration file " + configFile);
+            throw new Error(">ERROR: Unable to load configuration file " + configFile);
         }
         
         return p;
