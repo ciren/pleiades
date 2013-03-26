@@ -98,7 +98,7 @@ public class ResultsListener implements EntryListener, MessageListener<Task> {
             runningMap.forceUnlock(t.getId());
             rLock.unlock();
         }
-
+        
         System.out.println("Task completed:" + message.getMessageObject().getId());
 
         Lock cLock = Hazelcast.getLock(Config.completedMap);
@@ -127,7 +127,7 @@ public class ResultsListener implements EntryListener, MessageListener<Task> {
                 IMap<String, List<Simulation>> simulationsMap = Hazelcast.getMap(Config.simulationsMap);
 
                 gathering = true;
-                
+
                 gatherer.gatherResults(simulationsMap, completedMap, cSimulation);
                 simulationsMap.forceUnlock(cSimulation.getOwner());
 

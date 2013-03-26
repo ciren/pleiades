@@ -8,11 +8,8 @@
  */
 package net.pleiades.simulations.selection;
 
-import java.util.List;
-import java.util.Map;
 import java.util.Random;
 import net.pleiades.database.SimulationsMapStore;
-import net.pleiades.simulations.Simulation;
 
 /**
  *
@@ -21,26 +18,14 @@ import net.pleiades.simulations.Simulation;
 public class EqualProbabilitySelector implements SimulationSelector {
 
     @Override
-    public String getKey(Map<String, List<Simulation>> jobs) {
-        //RandomProvider random = new MersenneTwister();
+    public String getKey(SimulationsMapStore simulationsDB) {
         Random random = new Random();
-        
-        SimulationsMapStore simulationsDB;
-                
-        try {
-            simulationsDB = new SimulationsMapStore();
-        } catch (Exception e) {
-            throw new Error("Unable to connect to persistent store. Aborting.");
-        }
 
-        //Object[] keySet = jobs.keySet().toArray();
         Object[] keySet = simulationsDB.loadAllKeys().toArray();
         int keys = keySet.length;
         double rand = random.nextDouble();
 
         int selected = (int)Math.ceil(rand * keys) - 1;
-
-        //System.out.println("\nJobs: " + jobs.size() + "\nKeys: " + keys + "\nSelected: " + selected + "(" + (String)keySet[selected] + ")");
         
         return (String)keySet[selected];
     }

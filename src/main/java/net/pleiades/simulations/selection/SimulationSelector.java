@@ -8,14 +8,12 @@
  */
 package net.pleiades.simulations.selection;
 
-import java.util.List;
-import java.util.Map;
-import net.pleiades.simulations.Simulation;
+import net.pleiades.database.SimulationsMapStore;
 
 /**
  *
  * @author bennie
  */
 public interface SimulationSelector {
-    String getKey(Map<String, List<Simulation>> jobs);
+    String getKey(SimulationsMapStore simulationsDB);
 }

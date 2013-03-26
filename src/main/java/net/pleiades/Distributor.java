@@ -19,6 +19,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.locks.Lock;
+import net.pleiades.database.RunningMapStore;
+import net.pleiades.database.SimulationsMapStore;
 import net.pleiades.simulations.Simulation;
 import net.pleiades.simulations.selection.EqualProbabilitySelector;
 import net.pleiades.simulations.selection.SimulationSelector;
@@ -30,13 +32,17 @@ import net.pleiades.tasks.Task;
  */
 public class Distributor implements MessageListener<String>, Runnable {
     private final int CHECK_INTERVAL = 12;
-    private final int RESEND_REQUEST_INTERVAL = 3;
+    
+    private static SimulationsMapStore simulationsMapStore;
+    private static RunningMapStore runningMapStore;
 
     private SimulationSelector simulationSelector;
     private Properties properties;
 
-    public Distributor(Properties p) {
-        this.properties = p;
+    public Distributor() {
+        this.properties = Config.getConfiguration();
+        simulationsMapStore = new SimulationsMapStore();
+        runningMapStore = new RunningMapStore();
         this.simulationSelector = new EqualProbabilitySelector();
     }
 
@@ -53,6 +59,14 @@ public class Distributor implements MessageListener<String>, Runnable {
     public synchronized void onMessage(Message<String> message) {
         String workerID = message.getMessageObject();
         System.out.println("||| Request from " + workerID);
+        
+        if (runningMapStore.loadAll(runningMapStore.loadAllKeys()).containsValue(workerID)) {
+            return;
+        }
+        
+        if (simulationsMapStore.loadAllKeys().isEmpty()) {
+            return;
+        }
 
         Lock jLock = Hazelcast.getLock(Config.simulationsMap);
         Lock rLock = Hazelcast.getLock(Config.runningMap);
@@ -60,33 +74,19 @@ public class Distributor implements MessageListener<String>, Runnable {
         rLock.lock();
         IMap<String, String> runningMap = Hazelcast.getMap(Config.runningMap);
 
-        if (runningMap.values().contains(workerID)) {
-            rLock.unlock();
-            return;
-        }
-
         jLock.lock();
         IMap<String, List<Simulation>> jobsMap = Hazelcast.getMap(Config.simulationsMap);
 
         Transaction txn = Hazelcast.getTransaction();
         txn.begin();
-
-        if (jobsMap.isEmpty()) {
-            txn.rollback();
-            jLock.unlock();
-            rLock.unlock();
-            return;
-        }
         
         beat();
 
-        String key = simulationSelector.getKey(jobsMap);
+        String key = simulationSelector.getKey(simulationsMapStore);
 
         Task task = null;
 
         try {
-            //runningMap.put(workerID, new MockSimulation());
-
             List<Simulation> collection = jobsMap.remove(key);
             if (collection == null) {
                 throw new Exception("No simulations found for user: " + key);
@@ -108,21 +108,6 @@ public class Distributor implements MessageListener<String>, Runnable {
             runningMap.put(task.getId(), workerID);
 
             txn.commit();
-
-            /* BEGIN TESTING */
-//            if(!runningMap.isEmpty()) {
-//                StringBuilder running = new StringBuilder();
-//                for (Task t : runningMap.keySet()) {
-//                    running.append(t.getId());
-//                    running.append(" -> ");
-//                    running.append(runningMap.get(t));
-//                    running.append("\n");
-//                }
-//            
-//            
-//                Utils.emailAdmin("Running Map:\n\n" + running.toString(), properties);
-//            }
-            /* END TESTING */
             
             Map<String, Task> toPublish = new HashMap<String, Task>();
             toPublish.put(workerID, task);
@@ -132,7 +117,6 @@ public class Distributor implements MessageListener<String>, Runnable {
             txn.rollback();
         } finally {
             jobsMap.forceUnlock(key);
-            //runningMap.forceUnlock(task);
             jLock.unlock();
             rLock.unlock();
         }
@@ -147,10 +131,6 @@ public class Distributor implements MessageListener<String>, Runnable {
             }
 
             beat();
-
-//            if (checkCounter % RESEND_REQUEST_INTERVAL == 0) {
-//                Config.TASKS_TOPIC.publish(Config.RESEND_REQUEST);
-//            }
 
             checkCounter = (checkCounter + 1) % CHECK_INTERVAL;
 
@@ -184,7 +164,6 @@ public class Distributor implements MessageListener<String>, Runnable {
                 }
 
                 if (!memberIsAlive) {
-                    //sim.addUnfinishedTask(); //this is incorrect. The task should be added in the SimulationsMap
                     regenerateTask(task.getParent());
                     runningMap.remove(task);
                     Utils.emailAdmin(Utils.getSocketStringFromWorkerID(workerID) + " Crashed!! One task has been recovered.", properties);

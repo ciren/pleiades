@@ -12,7 +12,6 @@ import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.Message;
 import com.hazelcast.core.MessageListener;
 import java.io.IOException;
-import java.util.Enumeration;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
@@ -158,7 +157,7 @@ public class WorkerPool {
                     }
 
                     if (locked) {
-                        distributor = new Distributor(properties);
+                        distributor = new Distributor();
                         distributor.activate();
                         Utils.emailAdmin("Pleiades Distributor now running on: "
                                 + Hazelcast.getCluster().getLocalMember().getInetSocketAddress(),
