@@ -55,12 +55,12 @@ public class User {
         File inputFile = new File(input);
         String absPath = inputFile.getAbsolutePath();
         String jobName = absPath.substring(absPath.replaceAll("\\\\", "/").lastIndexOf("/") + 1, absPath.lastIndexOf("."));
-        String fileKey = user + "_" + jobName;
 
         System.out.println(">Creating job from file: " + input);
         System.out.println(">Job name set to: " + jobName);
         SimulationsCreator creator = new XMLSimulationsCreator(user, userEmail, user, jobName, releaseType);
-        List<Simulation> simulations = creator.createSimulations(inputFile, fileKey);//runBytes);
+        List<Simulation> simulations = creator.createSimulations(inputFile, "");//runBytes);
+        String fileKey = simulations.get(0).getFileKey();
 
         System.out.println(">Your job contains " + simulations.size() + " simulations.");
 
@@ -76,7 +76,7 @@ public class User {
 
             System.out.println(">Uploading tasks to cluster...");
             fileQueue.put(fileKey, runBytes);
-            List<Simulation> jobsList = simulationsMap.remove(user);
+            List<Simulation> jobsList = simulationsMap.get(user);
             if (jobsList == null) {
                 jobsList = new LinkedList<Simulation>();
             }

@@ -11,7 +11,6 @@ package net.pleiades;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.IMap;
 import com.hazelcast.core.IQueue;
-import com.hazelcast.core.ITopic;
 import com.hazelcast.core.Message;
 import com.hazelcast.core.MessageListener;
 import com.hazelcast.core.Transaction;
@@ -44,7 +43,27 @@ public class ErrorListener implements MessageListener<Task> {
 
     @Override
     public void onMessage(Message<Task> message) {
-        System.out.println("Error received:" + message.getMessageObject().getId());
+        Task t = message.getMessageObject();
+        System.out.println("Error received:" + t.getId());
+        
+        Lock rLock = Hazelcast.getLock(Config.runningMap);
+        rLock.lock();
+
+        IMap<String, String> runningMap = Hazelcast.getMap(Config.runningMap);
+
+        Transaction txn = Hazelcast.getTransaction();
+        txn.begin();
+
+        try {
+            runningMap.remove(t.getId());
+            txn.commit();
+        } catch (Throwable e) {
+            txn.rollback();
+        } finally {
+            runningMap.forceUnlock(t.getId());
+            rLock.unlock();
+        }
+        
         Lock cLock = Hazelcast.getLock(Config.completedMap);
         Lock jLock = Hazelcast.getLock(Config.simulationsMap);
         cLock.lock();
@@ -53,10 +72,7 @@ public class ErrorListener implements MessageListener<Task> {
         IMap<String, List<Simulation>> simulationsMap = Hazelcast.getMap(Config.simulationsMap);
         IMap<String, Simulation> completedMap = Hazelcast.getMap(Config.completedMap);
 
-        Transaction txn = Hazelcast.getTransaction();
         txn.begin();
-
-        Task t = message.getMessageObject();
 
         String simulationsKey = t.getParent().getOwner();
 

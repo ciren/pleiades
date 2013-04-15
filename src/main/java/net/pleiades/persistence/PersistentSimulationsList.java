@@ -7,7 +7,6 @@
  */
 package net.pleiades.persistence;
 
-import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import java.util.ArrayList;
@@ -45,7 +44,8 @@ public class PersistentSimulationsList extends BasicDBObject {
         LinkedList<Simulation> list = new LinkedList<Simulation>();
         
         for (DBObject o : array) {
-            list.add(new CilibSimulation((PersistentSimulationsMapObject) o));
+            System.out.println(o.getClass());
+            list.add(new CilibSimulation(new PersistentCompletedMapObject(o)));
         }
         
         return list;

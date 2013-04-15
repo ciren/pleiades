@@ -27,6 +27,10 @@ public class EqualProbabilitySelector implements SimulationSelector {
 
         int selected = (int)Math.ceil(rand * keys) - 1;
         
+        if (selected < 0) {
+            return "";
+        }
+        
         return (String)keySet[selected];
     }
 }

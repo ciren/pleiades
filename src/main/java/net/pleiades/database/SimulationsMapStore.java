@@ -21,6 +21,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -113,31 +114,25 @@ public class SimulationsMapStore implements MapStore<String, List<Simulation>> {
     public List<Simulation> load(String k) {
         BasicDBObject query = new BasicDBObject();
         query.put("owner", k);
-        
+
         DBObject load = jobs.findOne(query);
-        
+
         if (load == null) {
             return null;
         }
         
-        ArrayList<DBObject> array = (ArrayList<DBObject>) load;
-        LinkedList<Simulation> list = new LinkedList<Simulation>();
-        
-        for (DBObject o : array) {
-            list.add(new CilibSimulation((PersistentSimulationsMapObject) o));
-        }
-        
-        return list;
+        PersistentSimulationsList array = (PersistentSimulationsList) load;
+        return array.simulations();
     }
 
     @Override
     public Map<String, List<Simulation>> loadAll(Collection<String> clctn) {
         Map<String, List<Simulation>> map = new ConcurrentHashMap<String, List<Simulation>>();
-        
+
         for (String k : clctn) {
             map.put(k, load(k));
         }
-        
+
         return map;
     }
 

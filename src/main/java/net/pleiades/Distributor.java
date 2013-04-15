@@ -15,6 +15,7 @@ import com.hazelcast.core.Message;
 import com.hazelcast.core.MessageListener;
 import com.hazelcast.core.Transaction;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -58,19 +59,14 @@ public class Distributor implements MessageListener<String>, Runnable {
     @Override
     public synchronized void onMessage(Message<String> message) {
         String workerID = message.getMessageObject();
-        System.out.println("||| Request from " + workerID);
         
         if (runningMapStore.loadAll(runningMapStore.loadAllKeys()).containsValue(workerID)) {
             return;
         }
         
-        if (simulationsMapStore.loadAllKeys().isEmpty()) {
-            return;
-        }
-
         Lock jLock = Hazelcast.getLock(Config.simulationsMap);
         Lock rLock = Hazelcast.getLock(Config.runningMap);
-        
+       
         rLock.lock();
         IMap<String, String> runningMap = Hazelcast.getMap(Config.runningMap);
 
@@ -79,44 +75,49 @@ public class Distributor implements MessageListener<String>, Runnable {
 
         Transaction txn = Hazelcast.getTransaction();
         txn.begin();
-        
+
         beat();
-
-        String key = simulationSelector.getKey(simulationsMapStore);
-
         Task task = null;
 
         try {
-            List<Simulation> collection = jobsMap.remove(key);
-            if (collection == null) {
-                throw new Exception("No simulations found for user: " + key);
+            String key = simulationSelector.getKey(simulationsMapStore);
+        
+            if (key.equals("")) {
+                throw new Exception("No key found");
             }
-
-            for (Simulation s : collection) {
+            List<Simulation> collection = jobsMap.get(key);
+            if (collection == null || collection.isEmpty()) {
+                jobsMap.remove(key);
+                jobsMap.forceUnlock(key);
+                txn.commit();
+                return;
+            }
+            Iterator<Simulation> iter = collection.iterator();
+            
+            while (iter.hasNext()) {
+                Simulation s = iter.next();
                 task = s.getUnfinishedTask();
                 if (task != null) {
                     break;
                 }
+                else {
+                    iter.remove();
+                }
             }
-
             jobsMap.put(key, collection);
-
+            jobsMap.forceUnlock(key);
             if (task == null) {
-                throw new Exception("Unfinished task not found.");
+                txn.commit();
+                return;
             }
-
             runningMap.put(task.getId(), workerID);
-
             txn.commit();
-            
             Map<String, Task> toPublish = new HashMap<String, Task>();
             toPublish.put(workerID, task);
             Config.TASKS_TOPIC.publish(toPublish);
-            System.out.println("|||| Publishing task " + task.getId() + " to " + workerID);
         } catch (Throwable e) {
             txn.rollback();
         } finally {
-            jobsMap.forceUnlock(key);
             jLock.unlock();
             rLock.unlock();
         }

@@ -73,12 +73,6 @@ public class ResultsListener implements EntryListener, MessageListener<Task> {
 
     @Override
     public synchronized void onMessage(Message<Task> message) {
-        if (message.getMessageObject().getId().equals("")) { //this attempts to gather jobs from the completed map after the gatherer crashed unexpectedly
-            System.out.println("Checking all results");      //see line 45 in net.pleiades.Gatherer.java
-            checkAll();
-            return;
-        }
-
         Task t = message.getMessageObject();
 
         Lock rLock = Hazelcast.getLock(Config.runningMap);
@@ -102,13 +96,11 @@ public class ResultsListener implements EntryListener, MessageListener<Task> {
         System.out.println("Task completed:" + message.getMessageObject().getId());
 
         Lock cLock = Hazelcast.getLock(Config.completedMap);
-        Lock jLock = Hazelcast.getLock(Config.simulationsMap);
         cLock.lock();
         IMap<String, Simulation> completedMap = Hazelcast.getMap(Config.completedMap);
 
         txn.begin();
 
-        boolean gathering = false;
         try {
             Simulation cSimulation = completedMap.get(t.getParent().getID());
 
@@ -119,17 +111,10 @@ public class ResultsListener implements EntryListener, MessageListener<Task> {
             cSimulation.completeTask(t, properties);
 
             if (cSimulation.isComplete()) {
-                completedMap.remove(t.getParent().getID());
                 System.out.println("\nGathering: " + cSimulation.getID());
                 System.out.println(cSimulation.getResults().size() + " tasks completed.");
 
-                jLock.lock();
-                IMap<String, List<Simulation>> simulationsMap = Hazelcast.getMap(Config.simulationsMap);
-
-                gathering = true;
-
-                gatherer.gatherResults(simulationsMap, completedMap, cSimulation);
-                simulationsMap.forceUnlock(cSimulation.getOwner());
+                gatherer.gatherResults(completedMap, cSimulation);
 
                 if (cSimulation.jobComplete()) {
                     Utils.emailUser(cSimulation, new File(properties.getProperty("email_complete_template")), properties, "");
@@ -152,54 +137,16 @@ public class ResultsListener implements EntryListener, MessageListener<Task> {
                 }
             } else {
                 completedMap.put(t.getParent().getID(), cSimulation);
+                completedMap.forceUnlock(t.getParent().getID());
             }
             
-            completedMap.forceUnlock(t.getParent().getID());
             txn.commit();
         } catch (Throwable e) {
             System.out.println("ERROR:");
             e.printStackTrace();
             txn.rollback();
         } finally {
-            if (gathering) {
-                jLock.unlock();
-            }
             cLock.unlock();
-        }
-    }
-
-    private void checkAll() {
-        Lock cLock = Hazelcast.getLock(Config.completedMap);
-        //Lock jLock = Hazelcast.getLock(Config.simulationsMap);
-        cLock.lock();
-
-        IMap<String, Simulation> completedMap = Hazelcast.getMap(Config.completedMap);
-        Transaction txn = Hazelcast.getTransaction();
-
-        for (Simulation cSimulation : completedMap.values()) {
-            txn.begin();
-            try {
-                if (cSimulation.isComplete()) {
-                    completedMap.remove(cSimulation.getID());
-                    System.out.println("\nGathering: " + cSimulation.getID());
-                    System.out.println(cSimulation.getResults().size() + " tasks completed.");
-//                    jLock.lock();
-//                    IMap<String, List<Simulation>> simulationsMap = Hazelcast.getMap(Config.simulationsMap);
-                    gatherer.gatherResults(null, completedMap, cSimulation);
-//                    simulationsMap.forceUnlock(cSimulation.getOwner());
-                } else {
-                    completedMap.put(cSimulation.getID(), cSimulation);
-                }
-                completedMap.forceUnlock(cSimulation.getID());
-                txn.commit();
-            } catch (Throwable e) {
-                System.out.println("ERROR:");
-                e.printStackTrace();
-                txn.rollback();
-            } finally {
-                //jLock.unlock();
-                cLock.unlock();
-            }
         }
     }
 }

@@ -8,6 +8,7 @@
 package net.pleiades.persistence;
 
 import com.mongodb.BasicDBObject;
+import com.mongodb.DBObject;
 import java.util.ArrayList;
 import java.util.List;
 import net.pleiades.simulations.Simulation;
@@ -34,6 +35,21 @@ public class PersistentCompletedMapObject extends BasicDBObject {
         put("unfinishedTasks", s.unfinishedCount());
         put("results", s.getResults());
         put("releaseType", s.getReleaseType());
+    }
+    
+    public PersistentCompletedMapObject(DBObject s) {
+        //put("cilibInput", s.getCilibInput());
+        put("fileKey", s.get("fileKey"));
+        put("outputFileName", s.get("outputFileName"));
+        put("outputPath", s.get("outputPath"));
+        put("samples", s.get("samples"));
+        put("owner", s.get("owner"));
+        put("ownerEmail", s.get("ownerEmail"));
+        put("id", s.get("id"));
+        put("jobName", s.get("jobName"));
+        put("unfinishedTasks", s.get("unfinishedTasks"));
+        put("results", s.get("results"));
+        put("releaseType", s.get("releaseType"));
     }
 
     public String cilibInput() {

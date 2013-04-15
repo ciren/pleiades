@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import net.pleiades.Config;
+import net.pleiades.database.CompletedMapStore;
 import net.pleiades.persistence.PersistentCompletedMapObject;
 import net.pleiades.persistence.PersistentSimulationsMapObject;
 import net.pleiades.tasks.CilibXMLTask;
@@ -60,6 +61,8 @@ public class CilibSimulation extends BasicDBObject implements Simulation, Serial
             System.out.println("Error: You may not run more than " + Config.MaxJobsPerUser + " jobs at a time.");
             System.exit(1);
         }
+        
+        this.fileKey = getJobID();
     }
 
     public CilibSimulation(CilibSimulation other) {
@@ -132,9 +135,8 @@ public class CilibSimulation extends BasicDBObject implements Simulation, Serial
     }
 
     private boolean createID(String id) {
-        Map<String, Simulation> completedMap = Hazelcast.getMap(Config.completedMap);
-
-        Collection<String> collection = completedMap.keySet();
+        CompletedMapStore store = new CompletedMapStore();
+        Collection<String> collection = store.loadAllKeys();
 
         String myId;
         boolean validId;
@@ -165,7 +167,7 @@ public class CilibSimulation extends BasicDBObject implements Simulation, Serial
     }
 
     @Override
-    public String getJobID() {
+    public final String getJobID() {
         return id.substring(0, id.lastIndexOf("_"));
     }
 

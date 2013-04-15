@@ -42,23 +42,8 @@ public class CilibSampleGatherer implements SampleGatherer {
     }
 
     @Override
-    public synchronized Simulation gatherResults(IMap<String, List<Simulation>> simulationsMap, IMap<String, Simulation> completedMap, Simulation s) throws Throwable {
-        if (simulationsMap != null) {
-            completedMap.remove(s.getID());
-
-            List<Simulation> sims = simulationsMap.remove(s.getOwner());
-            Iterator<Simulation> iter = sims.iterator();
-
-            while (iter.hasNext()) {
-                if (iter.next().getID().equals(s.getID())) {
-                    iter.remove();
-                    break;
-                }
-            }
-            if (!sims.isEmpty()) {
-                simulationsMap.put(s.getOwner(), sims);
-            }
-        }
+    public synchronized Simulation gatherResults(IMap<String, Simulation> completedMap, Simulation s) throws Throwable {
+        completedMap.remove(s.getID());
 
         List<String> results = s.getResults();
         StringBuilder resultsBuilder = new StringBuilder();

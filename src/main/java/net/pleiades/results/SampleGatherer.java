@@ -18,5 +18,5 @@ import net.pleiades.simulations.Simulation;
  */
 public interface SampleGatherer {
     //Simulation resultsAvailable();
-    Simulation gatherResults(IMap<String, List<Simulation>> simulationsMap, IMap<String, Simulation> completedMap, Simulation s) throws Throwable;
+    Simulation gatherResults(IMap<String, Simulation> completedMap, Simulation s) throws Throwable;
 }
