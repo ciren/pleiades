@@ -18,7 +18,6 @@ import com.hazelcast.core.MessageListener;
 import com.hazelcast.core.Transaction;
 import java.io.File;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.locks.Lock;
 import net.pleiades.cluster.HazelcastCommunicator;
@@ -72,7 +71,7 @@ public class ResultsListener implements EntryListener, MessageListener<Task> {
     }
 
     @Override
-    public synchronized void onMessage(Message<Task> message) {
+    public void onMessage(Message<Task> message) {
         Task t = message.getMessageObject();
 
         Lock rLock = Hazelcast.getLock(Config.runningMap);

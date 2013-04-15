@@ -10,6 +10,7 @@ package net.pleiades.simulations;
 
 import com.hazelcast.core.Hazelcast;
 import com.mongodb.BasicDBObject;
+import java.io.BufferedOutputStream;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -231,11 +232,11 @@ public class CilibSimulation extends BasicDBObject implements Simulation, Serial
         try {
             File binary = new File(fileName);
             binary.setExecutable(true, false);
-            FileOutputStream writer = new FileOutputStream(binary);
+            BufferedOutputStream writer = new BufferedOutputStream(new FileOutputStream(binary));
 
             Map<String, byte[]> fileQueue = Hazelcast.getMap(Config.fileMap);
             byte[] bytes = fileQueue.get(fileKey);
-
+            
             writer.write(bytes);
             writer.flush();
             writer.close();

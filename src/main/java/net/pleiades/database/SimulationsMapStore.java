@@ -140,8 +140,9 @@ public class SimulationsMapStore implements MapStore<String, List<Simulation>> {
     public Set<String> loadAllKeys() {
         Set<String> keys = new ConcurrentHashSet<String>();
         BasicDBObject query = new BasicDBObject();
+        BasicDBObject dbKeys = new BasicDBObject("owner", "1");
         
-        DBCursor cursor = jobs.find(query);
+        DBCursor cursor = jobs.find(query, dbKeys);
         
         while (cursor.hasNext()) {
             keys.add((String) cursor.next().get("owner"));

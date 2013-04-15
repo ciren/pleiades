@@ -58,6 +58,9 @@ public class Distributor implements MessageListener<String>, Runnable {
 
     @Override
     public synchronized void onMessage(Message<String> message) {
+        long startTime = System.currentTimeMillis();
+        boolean distributing = false;
+        
         String workerID = message.getMessageObject();
         
         if (runningMapStore.loadAll(runningMapStore.loadAllKeys()).containsValue(workerID)) {
@@ -66,9 +69,6 @@ public class Distributor implements MessageListener<String>, Runnable {
         
         Lock jLock = Hazelcast.getLock(Config.simulationsMap);
         Lock rLock = Hazelcast.getLock(Config.runningMap);
-       
-        rLock.lock();
-        IMap<String, String> runningMap = Hazelcast.getMap(Config.runningMap);
 
         jLock.lock();
         IMap<String, List<Simulation>> jobsMap = Hazelcast.getMap(Config.simulationsMap);
@@ -104,22 +104,33 @@ public class Distributor implements MessageListener<String>, Runnable {
                     iter.remove();
                 }
             }
+            
             jobsMap.put(key, collection);
             jobsMap.forceUnlock(key);
+            
             if (task == null) {
                 txn.commit();
                 return;
             }
-            runningMap.put(task.getId(), workerID);
-            txn.commit();
+            
+            distributing = true;
+            
             Map<String, Task> toPublish = new HashMap<String, Task>();
             toPublish.put(workerID, task);
             Config.TASKS_TOPIC.publish(toPublish);
+
+            rLock.lock();
+            IMap<String, String> runningMap = Hazelcast.getMap(Config.runningMap);
+        
+            runningMap.put(task.getId(), workerID);
+            txn.commit();
         } catch (Throwable e) {
             txn.rollback();
         } finally {
+            if (distributing) {
+                rLock.unlock();
+            }
             jLock.unlock();
-            rLock.unlock();
         }
     }
 
