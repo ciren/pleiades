@@ -92,6 +92,7 @@ public class CilibSimulation extends BasicDBObject implements Simulation, Serial
         this.results = p.results();
         this.fileKey = p.fileKey();
         this.releaseType = p.releaseType();
+        this.unfinishedTasks = p.unfinishedTasks();
 
         this.cilibInput = p.cilibInput();
     }
@@ -107,6 +108,7 @@ public class CilibSimulation extends BasicDBObject implements Simulation, Serial
         this.results = p.results();
         this.fileKey = p.fileKey();
         this.releaseType = p.releaseType();
+        this.unfinishedTasks = p.unfinishedTasks();
 
         this.cilibInput = p.cilibInput();
     }
