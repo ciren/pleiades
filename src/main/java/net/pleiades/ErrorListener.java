@@ -77,28 +77,35 @@ public class ErrorListener implements MessageListener<Task> {
         String simulationsKey = t.getParent().getOwner();
 
         try {
-            String simulationID = t.getParent().getID();
+            String id;
+            if (t.getOutput().equals("CANCELLED")) {
+                id = t.getParent().getJobID();
+                System.out.println("*** " + id);
+            } else {
+                id = t.getParent().getID();
+            }
 
             //remember erroneous simulations
             IQueue<String> errors = Hazelcast.getQueue(Config.errorQueue);
             for (String s : errors) {
-                if (s.equals(simulationID)) {
+                if (s.equals(id)) {
                     throw new Exception("Error already handeled.");
                 }
             }
-            errors.add(simulationID);
+            errors.add(id);
 
             //remove simulation from jobs- and results queues
             List<Simulation> jobs = simulationsMap.get(simulationsKey);
-            int simNum = t.getParent().getSimulationNumber();
+//            int simNum = t.getParent().getSimulationNumber();
 
             Iterator<Simulation> iter = jobs.iterator();
-
+//            System.out.println("JOBS: " + jobs.size());
             Simulation current;
             while (iter.hasNext()) {
-                if ((current = iter.next()).getID().equals(simulationID)
-                        && current.getSimulationNumber() == simNum) {
-
+                current = iter.next();
+//                System.out.println("Current: " + current.getID());
+                if ((current).getID().startsWith(id)) {
+//                    System.out.println("rm " + current.getID());
                     completedMap.remove(current.getID());
                     completedMap.forceUnlock(current.getID());
                     iter.remove();
@@ -108,8 +115,11 @@ public class ErrorListener implements MessageListener<Task> {
             txn.commit();
 
             //email user
-            Utils.emailUser(t.getParent(), new File(properties.getProperty("email_error_template")), properties, t.getOutput());
-
+            if (!t.getOutput().equals("CANCELLED")) {
+                Utils.emailUser(t.getParent(), new File(properties.getProperty("email_error_template")), properties, t.getOutput());
+            } else {
+                System.out.println("[Cancelled by user]");
+            }
         } catch (Throwable e) {
             txn.rollback();
         } finally {

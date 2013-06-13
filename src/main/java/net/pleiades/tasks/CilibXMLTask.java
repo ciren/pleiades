@@ -67,13 +67,15 @@ public class CilibXMLTask extends BasicDBObject implements Task, Serializable {
     }
 
     @Override
-    public boolean execute(Properties p) {
+    public int execute(Properties p) {
         results = new String();
         output = new StringBuilder();
 
         String line;
         InputStream inputStream;
         BufferedReader reader;
+        
+        int exitCode = 1;
 
         try {
             List<String> command = new LinkedList<String>();
@@ -82,7 +84,8 @@ public class CilibXMLTask extends BasicDBObject implements Task, Serializable {
             while (tokens.hasMoreTokens()) {
                 command.add(tokens.nextToken()
                         .replaceAll("\\$jar", id + ".run")
-                        .replaceAll("\\$file", id));
+                        .replaceAll("\\$file", id)
+                        .replaceAll("\\$pname", "cilib-" + id));
             }
 
             Process shell = new ProcessBuilder(command).start();
@@ -93,14 +96,14 @@ public class CilibXMLTask extends BasicDBObject implements Task, Serializable {
                 progress = line;
             }
 
-            int exitValue = shell.waitFor();
+            exitCode = shell.waitFor();
             
-            if (exitValue == 0) {
+            if (exitCode == 0) {
                 File r = new File("pleiades/" + id + ".pleiades");
                 InputStream rIn = new FileInputStream(r);
                 results = convertStreamToStr(rIn);
                 r.delete();
-            } else {
+            } else if (exitCode != 137) {
                 InputStream eIn = shell.getErrorStream();
                 FileWriter writer = new FileWriter(new File(id + ".log"));
                 
@@ -109,6 +112,8 @@ public class CilibXMLTask extends BasicDBObject implements Task, Serializable {
                 
                 writer.append(output);
                 writer.close();
+            } else {
+                output.append("CANCELLED");
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -117,12 +122,7 @@ public class CilibXMLTask extends BasicDBObject implements Task, Serializable {
             e.printStackTrace();
         }
         
-        if (results.isEmpty()) {
-            System.out.println("Returning error.");
-            return false;
-        }
-               
-        return true;
+        return exitCode;
     }
 
     @Override

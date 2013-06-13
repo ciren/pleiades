@@ -58,7 +58,7 @@ public class Distributor implements MessageListener<String>, Runnable {
 
     @Override
     public synchronized void onMessage(Message<String> message) {
-        long startTime = System.currentTimeMillis();
+        //System.out.println("Request from: " + message.getMessageObject());
         boolean distributing = false;
         
         String workerID = message.getMessageObject();

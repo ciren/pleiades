@@ -57,16 +57,21 @@ public class TaskExecutor implements Executor, Runnable, MessageListener<Map<Str
 
         state(EXECUTING);
 
-        boolean success = currentTask.execute(properties);
+        int exitCode = currentTask.execute(properties);
         currentTask.getParent().deleteBinary(bin);
         currentTask.deleteFile();
 
         state(COMPLETING);
 
-        if (success) {
+        if (exitCode == 0) {
             Config.RESULTS_TOPIC.publish(currentTask);
         } else if (!currentTask.getOutput().isEmpty()) {
             Config.ERRORS_TOPIC.publish(currentTask);
+            
+            if (exitCode == 137) {
+                state(PAUSED);
+                Utils.sleep(5000);
+            }
         }
 
         state(COMPLETED);
@@ -94,7 +99,7 @@ public class TaskExecutor implements Executor, Runnable, MessageListener<Map<Str
 
             if (currentTask != null) {
                 executeTask();
-            } else if (running) {
+            } else if (running && !isState(PAUSED)) {
                 requestNewTask();
             }
         }

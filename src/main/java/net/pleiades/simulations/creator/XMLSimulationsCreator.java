@@ -47,7 +47,7 @@ public class XMLSimulationsCreator implements SimulationsCreator {
 
 
     @Override
-    public List<Simulation> createSimulations(File xml, String fileKey/*byte[] run*/) {
+    public List<Simulation> createSimulations(File xml, String fileKey) {
         List<Simulation> sims = new ArrayList<Simulation>();
 
         NodeList algorithms, problems, measurements, simulations;
@@ -57,18 +57,19 @@ public class XMLSimulationsCreator implements SimulationsCreator {
             DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
             Document doc = dBuilder.parse(xml);
 
-            algorithms = doc.getElementsByTagName("algorithms");
-            problems = doc.getElementsByTagName("problems");
+            algorithms = doc.getElementsByTagName("algorithm");
+            problems = doc.getElementsByTagName("problem");
             measurements = doc.getElementsByTagName("measurements");
             simulations = doc.getElementsByTagName("simulation");
 
             Document newJob;
             OutputStream cilibInput;
 
-            Node alg, prb, msr, sim, output;
+            String algID = null, prbID = null, msrID = null, curID = null;
             String jobOutputFileName, jobOutputPath;
 
             for (int s = 0; s < simulations.getLength(); s++) {
+                Node alg = null, prb = null, msr = null, sim, output;
                 Node simulation = simulations.item(s);
 
                 if (simulation.getNodeType() == Node.ELEMENT_NODE) {
@@ -77,19 +78,62 @@ public class XMLSimulationsCreator implements SimulationsCreator {
 
                     newJob = dBuilder.newDocument();
 
-                    alg = newJob.importNode(algorithms.item(0), true);
-                    prb = newJob.importNode(problems.item(0), true);
-                    msr = newJob.importNode(measurements.item(0), true);
                     sim = newJob.importNode(simulations.item(s), true);
                     sim.getAttributes().getNamedItem("samples").setNodeValue("1");
+                    
+                    NodeList children = simulations.item(s).getChildNodes();
+                    for (int i = 0; i < children.getLength(); i++) {
+                        Node child = simulations.item(s).getChildNodes().item(i);
+                        
+                        if (!child.hasAttributes() || child.getNodeName().equals("output")) {
+                            continue;
+                        }
+                        
+                        curID = child.getAttributes().getNamedItem("idref").getNodeValue();
+                        
+                        if (child.getNodeName().equals("algorithm")) {
+                            algID = curID;
+                        } else if (child.getNodeName().equals("problem")) {
+                            prbID = curID;
+                        } else if (child.getNodeName().equals("measurements")) {
+                            msrID = curID;
+                        }
+                    }
+                    
+                    for (int i = 0; i < algorithms.getLength(); i++) {
+                        if (algorithms.item(i).getAttributes().getNamedItem("id").getNodeValue().equals(algID)) {
+                            alg = newJob.importNode(algorithms.item(i), true);
+                            break;
+                        }
+                    }
+                    
+                    for (int i = 0; i < problems.getLength(); i++) {
+                        if (problems.item(i).getAttributes().getNamedItem("id").getNodeValue().equals(prbID)) {
+                            prb = newJob.importNode(problems.item(i), true);
+                            break;
+                        }
+                    }
+                    
+                    for (int i = 0; i < measurements.getLength(); i++) {
+                        if (measurements.item(i).getAttributes().getNamedItem("id").getNodeValue().equals(msrID)) {
+                            msr = newJob.importNode(measurements.item(i), true);
+                            break;
+                        }
+                    }
 
                     Element root = newJob.createElement("simulator");
+                    Element algs = newJob.createElement("algorithms");
+                    Element prbs = newJob.createElement("problems");
+                    Element simsElement = newJob.createElement("simulations");
 
                     newJob.appendChild(root);
-                    root.appendChild(alg);
-                    root.appendChild(prb);
+                    algs.appendChild(alg);
+                    root.appendChild(algs);
+                    prbs.appendChild(prb);
+                    root.appendChild(prbs);
                     root.appendChild(msr);
-                    root.appendChild(sim);
+                    simsElement.appendChild(sim);
+                    root.appendChild(simsElement);
 
                     output = sim.getFirstChild();
 
@@ -101,13 +145,11 @@ public class XMLSimulationsCreator implements SimulationsCreator {
                     if (jobOutputPath.endsWith("/")) {
                         jobOutputPath = jobOutputPath.substring(0, jobOutputPath.length() - 1);
                     }
-                    //System.out.println("\nOutputPath: " + jobOutputPath);
 
                     jobOutputFileName = jobOutputPath;
                     if (jobOutputFileName.contains("/")) {
                         jobOutputFileName = jobOutputFileName.substring(jobOutputFileName.lastIndexOf("/") + 1);
                     }
-                    //System.out.println("\nOutputFileName: " + jobOutputFileName);
 
                     output.getAttributes().getNamedItem("file").setNodeValue("pleiades/" + s + ".pleiades");
 
@@ -134,6 +176,7 @@ public class XMLSimulationsCreator implements SimulationsCreator {
             e.printStackTrace();
         }
 
+        //System.out.println(sims.get(0).getCilibInput());
         return sims;
     }
 

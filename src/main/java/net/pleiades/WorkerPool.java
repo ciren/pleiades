@@ -65,10 +65,9 @@ public class WorkerPool {
             state = State.WORKING;
             new Thread(new Reader()).start();
 
-            if (!quiet) {
-                while (true) {
-                    Utils.sleep(200);
-
+            while (true) {
+                Utils.sleep(200);
+                if (!quiet) {
                     con.clearScreen();
 
                     if (dThread != null && distributor.getDistributor() != null) {
@@ -108,6 +107,14 @@ public class WorkerPool {
                                     state = State.PAUSED;
                                 } else {
                                     state = State.WORKING;
+                                }
+                                break;
+                                
+                            case 27:
+                                if (!quiet) {
+                                    quiet = true;
+                                } else {
+                                    quiet = false;
                                 }
                                 break;
 

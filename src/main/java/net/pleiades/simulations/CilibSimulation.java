@@ -307,10 +307,6 @@ public class CilibSimulation extends BasicDBObject implements Simulation, Serial
         return cilibInput;
     }
 
-    public String getId() {
-        return id;
-    }
-
     @Override
     public String toString() {
         return "Job: " + jobName + " (" + outputFileName + ")";
