@@ -63,7 +63,7 @@ public class SimulationsMapStore implements MapStore<String, Simulation> {
             auth = db.authenticate(user, pass.toCharArray());
             
             jobs = db.getCollection(properties.getProperty("simulations_map"));
-            jobs.setObjectClass(PersistentSimulationsList.class);
+            jobs.setObjectClass(PersistentSimulationsMapObject.class);
         } catch (Exception e) {
             return false;
         }
