@@ -9,7 +9,6 @@
 package net.pleiades.database;
 
 import com.hazelcast.core.MapStore;
-import com.hazelcast.util.ConcurrentHashSet;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DB;
 import com.mongodb.DBCollection;
@@ -25,7 +24,6 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import net.pleiades.persistence.PersistentSimulationsList;
 import net.pleiades.persistence.PersistentSimulationsMapObject;
 import net.pleiades.simulations.CilibSimulation;
 import net.pleiades.simulations.Simulation;

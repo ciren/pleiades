@@ -1,6 +1,7 @@
 target
 pleiades
 !src/main/java/net/pleiades*
+!src/test/java/net/pleiades*
 pleiades.conf
 !src/main/resources/pleiades.conf
 data
